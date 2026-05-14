@@ -1,6 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap");
 
 :root {
+  --site-bg: #ffffff;
+  --visual-viewport-height: 100dvh;
   --bg: oklch(0.975 0.006 75);
   --surface: oklch(0.992 0.004 75);
   --surface-muted: oklch(0.945 0.009 75);
@@ -13,7 +15,7 @@
   --paper-shadow: 0 24px 70px -46px oklch(0.2 0.018 245 / 0.4);
   font-family: "Inter", system-ui, sans-serif;
   color: var(--text);
-  background: #ffffff;
+  background: var(--site-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -27,40 +29,41 @@
 html {
   width: 100%;
   min-height: 100%;
+  min-height: 100svh;
+  min-height: 100dvh;
+  min-height: var(--visual-viewport-height);
   max-width: 100%;
   margin: 0;
   padding: 0;
-  overflow-x: clip;
-  background: #ffffff;
+  overflow-x: hidden;
+  background: var(--site-bg);
 }
 
 body {
   width: 100%;
   min-height: 100%;
+  min-height: 100svh;
+  min-height: 100dvh;
+  min-height: var(--visual-viewport-height);
   max-width: 100%;
   margin: 0;
   padding: 0;
-  overflow-x: clip;
+  overflow-x: hidden;
   min-width: 320px;
-  background: #ffffff;
+  background: var(--site-bg);
 }
 
 #root {
   width: 100%;
   min-height: 100%;
+  min-height: 100svh;
+  min-height: 100dvh;
+  min-height: var(--visual-viewport-height);
   max-width: 100%;
   margin: 0;
   padding: 0;
-  overflow-x: clip;
-  background: #ffffff;
-}
-
-@supports not (overflow: clip) {
-  html,
-  body,
-  #root {
-    overflow-x: hidden;
-  }
+  overflow-x: hidden;
+  background: var(--site-bg);
 }
 
 button,
@@ -293,13 +296,19 @@ img {
 .page-shell {
   position: relative;
   width: min(1160px, calc(100% - 32px));
+  min-height: 100%;
   margin: 0 auto;
+  background: transparent;
 }
 
 .home-main {
   position: relative;
-  background: #ffffff;
-  overflow: clip;
+  min-height: 100svh;
+  min-height: 100dvh;
+  min-height: var(--visual-viewport-height);
+  background: var(--site-bg);
+  overflow-x: clip;
+  overflow-y: visible;
   isolation: isolate;
 }
 
@@ -310,9 +319,13 @@ img {
 .home-cinematic {
   position: relative;
   width: 100vw;
+  min-height: 100svh;
+  min-height: 100dvh;
+  min-height: var(--visual-viewport-height);
   margin-left: calc(50% - 50vw);
-  background: #ffffff;
-  overflow: clip;
+  background: transparent;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .scroll-section {
@@ -350,7 +363,7 @@ img {
 .hero-scroll-stage {
   position: relative;
   width: 100%;
-  background: #ffffff;
+  background: transparent;
 }
 
 .concept-hero {
@@ -741,9 +754,14 @@ img {
   width: 100vw;
   height: 100svh;
   height: 100dvh;
+  height: var(--visual-viewport-height);
+  min-height: 100svh;
+  min-height: 100dvh;
+  min-height: var(--visual-viewport-height);
   z-index: 1;
   pointer-events: none;
   opacity: 1;
+  background: var(--site-bg);
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   contain: layout paint size;
@@ -754,6 +772,28 @@ img {
 
 .shared-helix-background {
   mix-blend-mode: multiply;
+}
+
+.site-background,
+.helix-background,
+.canvas-wrapper,
+.motion-background {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100svh;
+  height: 100dvh;
+  height: var(--visual-viewport-height);
+  min-height: 100svh;
+  min-height: 100dvh;
+  min-height: var(--visual-viewport-height);
+  pointer-events: none;
+  z-index: 0;
+  background: var(--site-bg);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  contain: layout paint size;
+  will-change: transform, opacity;
 }
 
 .page-helix-scene canvas {
@@ -789,6 +829,14 @@ img {
   display: grid;
   align-content: center;
   color: #050505;
+}
+
+.hero-content,
+.section-content,
+.page-content,
+.mobile-content {
+  position: relative;
+  z-index: 2;
 }
 
 .cinematic-scene > * {
@@ -2405,34 +2453,52 @@ a:focus-visible {
   #root {
     width: 100%;
     min-height: 100%;
+    min-height: 100svh;
+    min-height: 100dvh;
+    min-height: var(--visual-viewport-height);
     margin: 0;
     padding: 0;
-    background: #ffffff;
+    overflow-x: hidden;
+    background: var(--site-bg);
   }
 
   .scroll-section__sticky,
   .hero-section,
   .concept-hero,
   .cinematic-scene,
+  .fullscreen-section,
+  .sticky-scene,
+  .scroll-scene,
   .hero-gradient-shell,
   .hero-gradient-frame {
     min-height: 100svh;
     min-height: 100dvh;
+    min-height: var(--visual-viewport-height);
   }
 
   .scroll-section__sticky {
     height: 100svh;
     height: 100dvh;
+    height: var(--visual-viewport-height);
   }
 
   .page-helix-scene,
   .concept-helix-scene {
     position: fixed;
-    inset: 0;
+    top: calc(env(safe-area-inset-top) * -1);
+    right: 0;
+    bottom: calc(env(safe-area-inset-bottom) * -1);
+    left: 0;
     width: 100vw;
+    height: auto;
     height: 100svh;
     height: 100dvh;
+    height: calc(var(--visual-viewport-height) + env(safe-area-inset-top) + env(safe-area-inset-bottom));
+    min-height: 100svh;
+    min-height: 100dvh;
+    min-height: calc(var(--visual-viewport-height) + env(safe-area-inset-top) + env(safe-area-inset-bottom));
     pointer-events: none;
+    background: var(--site-bg);
     transform: translate3d(0, 0, 0);
     backface-visibility: hidden;
     contain: layout paint size;
@@ -2461,6 +2527,7 @@ a:focus-visible {
     min-width: 0;
     min-height: 100svh;
     min-height: 100dvh;
+    min-height: var(--visual-viewport-height);
     padding-top: var(--mobile-nav-clearance);
     padding-bottom: var(--mobile-bottom-space);
   }
@@ -2737,6 +2804,27 @@ a:focus-visible {
     min-height: 54px;
     justify-content: space-between;
     padding: 0 22px;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  html,
+  body,
+  #root,
+  .page-shell,
+  .home-main,
+  .home-cinematic {
+    min-height: -webkit-fill-available;
+  }
+
+  .page-helix-scene,
+  .concept-helix-scene,
+  .site-background,
+  .helix-background,
+  .canvas-wrapper,
+  .motion-background {
+    height: -webkit-fill-available;
+    min-height: -webkit-fill-available;
   }
 }
 
