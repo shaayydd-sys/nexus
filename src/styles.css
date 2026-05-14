@@ -25,30 +25,26 @@
   box-sizing: border-box;
 }
 
-html, body {
+html, body, #root {
   width: 100%;
-  min-height: 100%;
+  height: 100%;
   margin: 0;
   padding: 0;
-  background: var(--site-bg);
-}
-
-html {
   overflow-x: hidden;
+  background: var(--site-bg);
 }
 
 body {
-  overflow-x: hidden;
   min-width: 320px;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 #root {
-  width: 100%;
-  min-height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-  background: var(--site-bg);
+  min-height: 100dvh;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 button,
@@ -261,6 +257,7 @@ img {
     inset 0 1px 0 rgba(255, 255, 255, 0.54);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
+  isolation: isolate;
 }
 
 .mobile-menu a {
@@ -289,7 +286,8 @@ img {
 .home-main {
   position: relative;
   z-index: 1;
-  min-height: 100vh; min-height: 100dvh;
+  min-height: 100dvh;
+  min-height: 100vh;
   background: transparent;
   overflow-x: clip;
   overflow-y: visible;
@@ -303,7 +301,8 @@ img {
 .home-cinematic {
   position: relative;
   width: 100vw;
-  min-height: 100vh; min-height: 100dvh;
+  min-height: 100dvh;
+  min-height: 100vh;
   margin-left: calc(50% - 50vw);
   background: transparent;
   overflow-x: clip;
@@ -312,6 +311,7 @@ img {
 
 .scroll-section {
   position: relative;
+  height: var(--scroll-section-height, 180dvh);
   height: var(--scroll-section-height, 180vh);
   background: transparent;
 }
@@ -320,8 +320,10 @@ img {
   position: sticky;
   top: 0;
   z-index: 2;
-  height: 100vh; height: 100dvh;
-  min-height: 100vh; min-height: 100dvh;
+  height: 100dvh;
+  height: 100vh;
+  min-height: 100dvh;
+  min-height: 100vh;
   overflow: hidden;
   isolation: isolate;
 }
@@ -331,7 +333,8 @@ img {
 }
 
 .hero-section {
-  min-height: 100vh; min-height: 100dvh;
+  min-height: 100dvh;
+  min-height: 100vh;
   padding: 0;
 }
 
@@ -348,7 +351,8 @@ img {
 .concept-hero {
   position: relative;
   width: 100%;
-  min-height: 100vh; min-height: 100dvh;
+  min-height: 100dvh;
+  min-height: 100vh;
   margin-left: 0;
   padding: 18px 24px;
   overflow: hidden;
@@ -384,6 +388,7 @@ img {
   position: fixed;
   top: 24px;
   left: 50%;
+  transform: translateX(-50%);
   z-index: 1000;
   width: min(560px, calc(100% - 48px));
   height: 72px;
@@ -734,7 +739,8 @@ img {
   left: 0;
   width: 100vw;
   height: auto;
-  min-height: calc(100vh + 240px); min-height: calc(100dvh + 240px);
+  min-height: calc(100dvh + 240px);
+  min-height: calc(100vh + 240px);
   z-index: 0;
   pointer-events: none;
   opacity: 1;
@@ -762,7 +768,8 @@ img {
   left: 0;
   width: 100vw;
   height: auto;
-  min-height: calc(100vh + 240px); min-height: calc(100dvh + 240px);
+  min-height: calc(100dvh + 240px);
+  min-height: calc(100vh + 240px);
   pointer-events: none;
   z-index: 0;
   background: var(--site-bg);
@@ -799,7 +806,8 @@ img {
   position: relative;
   z-index: 2;
   width: min(1160px, calc(100% - 48px));
-  min-height: 100vh; min-height: 100dvh;
+  min-height: 100dvh;
+  min-height: 100vh;
   margin: 0 auto;
   display: grid;
   align-content: center;
@@ -1262,7 +1270,8 @@ img {
 .hero-gradient-shell {
   position: relative;
   width: 100%;
-  min-height: 100vh; min-height: 100dvh;
+  min-height: 100dvh;
+  min-height: 100vh;
   padding: 0;
   background:
     radial-gradient(ellipse at 50% -8%, oklch(0.93 0.006 245 / 0.82), transparent 34%),
@@ -1302,7 +1311,8 @@ img {
 
 .hero-gradient-frame {
   position: relative;
-  min-height: 100vh; min-height: 100dvh;
+  min-height: 100dvh;
+  min-height: 100vh;
   display: grid;
   align-items: center;
   padding: clamp(22px, 3vw, 32px);
@@ -2448,10 +2458,12 @@ a:focus-visible {
   .scroll-scene,
   .hero-gradient-shell,
   .hero-gradient-frame {
+    min-height: 100dvh;
     min-height: 100vh;
   }
 
   .scroll-section__sticky {
+    height: 100dvh;
     height: 100vh;
   }
 
@@ -2464,6 +2476,7 @@ a:focus-visible {
     left: 0;
     width: 100vw;
     height: auto;
+    min-height: calc(100dvh + 240px);
     min-height: calc(100vh + 240px);
     pointer-events: none;
     background: var(--site-bg);
@@ -2493,6 +2506,7 @@ a:focus-visible {
     justify-items: stretch;
     overflow: visible;
     min-width: 0;
+    min-height: 100dvh;
     min-height: 100vh;
     padding-top: var(--mobile-nav-clearance);
     padding-bottom: var(--mobile-bottom-space);
@@ -2514,6 +2528,8 @@ a:focus-visible {
     align-items: stretch;
     align-content: start;
     justify-content: center;
+    min-height: 100dvh;
+    min-height: 100vh;
     padding-top: var(--mobile-nav-clearance);
     padding-bottom: var(--mobile-bottom-space);
     text-align: left;
@@ -2525,6 +2541,8 @@ a:focus-visible {
     align-items: stretch;
     align-content: start;
     justify-content: center;
+    min-height: 100dvh;
+    min-height: 100vh;
     padding-top: var(--mobile-nav-clearance);
     padding-bottom: var(--mobile-bottom-space);
     text-align: left;
@@ -2775,7 +2793,12 @@ a:focus-visible {
 
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   body {
+    background-color: var(--site-bg);
+  }
+
+  #root {
     padding-bottom: env(safe-area-inset-bottom);
+    padding-top: env(safe-area-inset-top);
   }
 }
 
@@ -2798,11 +2821,13 @@ a:focus-visible {
   }
 
   .hero-section {
+    min-height: 100dvh;
     min-height: 100vh;
     padding: 0;
   }
 
   .concept-hero {
+    min-height: 100dvh;
     min-height: 100vh;
     padding: 14px 18px;
   }
@@ -2868,6 +2893,7 @@ a:focus-visible {
     align-items: stretch;
     justify-content: center;
     width: min(100% - 32px, 560px);
+    min-height: 100dvh;
     min-height: 100vh;
     padding-top: var(--mobile-nav-clearance);
     padding-bottom: var(--mobile-bottom-space);
@@ -2884,6 +2910,8 @@ a:focus-visible {
     align-items: stretch;
     align-content: start;
     justify-content: center;
+    min-height: 100dvh;
+    min-height: 100vh;
     padding-top: var(--mobile-nav-clearance);
     padding-bottom: var(--mobile-bottom-space);
     text-align: left;
@@ -2957,11 +2985,13 @@ a:focus-visible {
   }
 
   .hero-gradient-shell {
+    min-height: 100dvh;
     min-height: 100vh;
     border-radius: 0;
   }
 
   .hero-gradient-frame {
+    min-height: 100dvh;
     min-height: 100vh;
     border-width: 0;
     border-radius: 0;
