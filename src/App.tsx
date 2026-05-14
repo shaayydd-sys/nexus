@@ -143,6 +143,7 @@ function App() {
   return (
     <>
       <MotionRuntime page={page} />
+      {page === "home" && <SharedHelixBackground />}
       <Header page={page} navigate={navigate} />
       <main className={page === "home" ? "home-main" : undefined}>
         {page === "home" && <HomePage navigate={navigate} />}
@@ -391,8 +392,6 @@ function HomePage({ navigate }: { navigate: (path: string, scrollTargetId?: stri
     <PageShell>
       <ConceptTopbar navigate={navigate} />
       <div className="home-cinematic">
-        <SharedHelixBackground />
-
         <ScrollSection className="hero-scroll-stage" height="200vh">
           {({ progress }) => <HeroProductsScene progress={progress} />}
         </ScrollSection>
@@ -1037,7 +1036,6 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
     resizeObserver.observe(mount);
     resize();
 
-    const footer = document.querySelector<HTMLElement>(".site-footer");
     let frameId = 0;
     let currentProgress = 0;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1047,7 +1045,11 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
     };
 
     const animate = (time: number) => {
-      const stage = (mount.closest(".home-cinematic") ?? mount.closest(".hero-scroll-stage")) as HTMLElement | null;
+      const stage = (
+        mount.closest(".home-cinematic")
+        ?? document.querySelector<HTMLElement>(".home-cinematic")
+        ?? document.querySelector<HTMLElement>(".hero-scroll-stage")
+      ) as HTMLElement | null;
       const rect = stage?.getBoundingClientRect();
       const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
       const pageProgress = Math.min(Math.max(window.scrollY / maxScroll, 0), 1);
@@ -1055,17 +1057,12 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
         ? Math.min(Math.max(-rect.top / Math.max(rect.height - window.innerHeight, 1), 0), 1.2)
         : Math.min(pageProgress * 1.25, 1.2);
       currentProgress += (rawProgress - currentProgress) * 0.075;
-      const footerRect = footer?.getBoundingClientRect();
-      const footerFade = footerRect
-        ? Math.min(Math.max((window.innerHeight - footerRect.top + 40) / 260, 0), 1)
-        : 0;
       const sectionBase = 0.92 - Math.min(currentProgress * 0.2, 0.2);
       const readabilityFade = smoothStep(0.52, 0.74, currentProgress) * (1 - smoothStep(0.86, 1.04, currentProgress));
       const contactReturn = smoothStep(0.86, 1.02, currentProgress) * 0.14;
       const opacityFloor = width < 760 ? 0.38 : 0.22;
       const helixOpacity = Math.max(opacityFloor, sectionBase - readabilityFade * 0.34 + contactReturn);
-      const stableOpacity = Math.max(opacityFloor, (1 - footerFade * 0.72) * helixOpacity);
-      mount.style.opacity = stableOpacity.toFixed(3);
+      mount.style.opacity = helixOpacity.toFixed(3);
       mount.style.transform = "translate3d(0, 0, 0)";
 
       const idle = reducedMotion ? 0 : time * 0.00016;

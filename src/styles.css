@@ -301,7 +301,7 @@ img {
   position: relative;
   min-height: 100svh;
   min-height: 100dvh;
-  background: var(--site-bg);
+  background: transparent;
   overflow-x: clip;
   overflow-y: visible;
   isolation: isolate;
