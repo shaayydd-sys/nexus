@@ -299,6 +299,7 @@ img {
 
 .home-main {
   position: relative;
+  z-index: 1;
   min-height: 100svh;
   min-height: 100dvh;
   background: transparent;
@@ -751,7 +752,7 @@ img {
   width: 100vw;
   height: auto;
   min-height: calc(100lvh + 240px);
-  z-index: 1;
+  z-index: 0;
   pointer-events: none;
   opacity: 1;
   background: var(--site-bg);
@@ -764,7 +765,7 @@ img {
 }
 
 .shared-helix-background {
-  mix-blend-mode: multiply;
+  mix-blend-mode: normal;
 }
 
 .site-background,

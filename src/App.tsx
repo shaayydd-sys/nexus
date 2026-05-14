@@ -983,7 +983,7 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
 
     const ribGeometries: RoundedBoxGeometry[] = [];
     const ribMaterials: THREE.MeshStandardMaterial[] = [];
-    const ribs: Array<{ mesh: THREE.Mesh; baseRotationY: number }> = [];
+    const ribs: Array<{ mesh: THREE.Mesh; material: THREE.MeshStandardMaterial; baseRotationY: number; baseOpacity: number }> = [];
     const ribCount = 128;
     const radius = 0.78;
     const verticalStep = 0.064;
@@ -995,6 +995,7 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
       const angle = index * angleStep;
       const y = (index - centerOffset) * verticalStep;
       const geometry = new RoundedBoxGeometry(1.48, 0.076, 0.32, 4, 0.024);
+      const baseOpacity = 0.9 + Math.sin(progress * Math.PI) * 0.1;
       const material = new THREE.MeshStandardMaterial({
         color: new THREE.Color().lerpColors(
           new THREE.Color(0xecece8),
@@ -1004,7 +1005,7 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
         roughness: 0.9,
         metalness: 0,
         transparent: true,
-        opacity: 0.9 + Math.sin(progress * Math.PI) * 0.1,
+        opacity: baseOpacity,
       });
       ribGeometries.push(geometry);
       ribMaterials.push(material);
@@ -1015,7 +1016,7 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
       rib.rotation.set(0, baseRotationY, 0);
       rib.castShadow = true;
       rib.receiveShadow = true;
-      ribs.push({ mesh: rib, baseRotationY });
+      ribs.push({ mesh: rib, material, baseRotationY, baseOpacity });
       group.add(rib);
     }
 
@@ -1060,9 +1061,9 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
       const sectionBase = 0.92 - Math.min(currentProgress * 0.2, 0.2);
       const readabilityFade = smoothStep(0.52, 0.74, currentProgress) * (1 - smoothStep(0.86, 1.04, currentProgress));
       const contactReturn = smoothStep(0.86, 1.02, currentProgress) * 0.14;
-      const opacityFloor = width < 760 ? 0.38 : 0.22;
+      const opacityFloor = width < 760 ? 0.68 : 0.65;
       const helixOpacity = Math.max(opacityFloor, sectionBase - readabilityFade * 0.34 + contactReturn);
-      mount.style.opacity = helixOpacity.toFixed(3);
+      mount.style.opacity = "1";
       mount.style.transform = "translate3d(0, 0, 0)";
 
       const idle = reducedMotion ? 0 : time * 0.00016;
@@ -1071,6 +1072,11 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
       if (!reducedMotion) {
         ribs.forEach((rib, index) => {
           rib.mesh.rotation.y = rib.baseRotationY + Math.sin(time * 0.00072 + index * 0.18) * 0.022;
+          rib.material.opacity = rib.baseOpacity * helixOpacity;
+        });
+      } else {
+        ribs.forEach((rib) => {
+          rib.material.opacity = rib.baseOpacity * helixOpacity;
         });
       }
       group.position.set(
