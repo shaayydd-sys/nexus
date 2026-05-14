@@ -300,6 +300,7 @@ img {
   position: relative;
   background: #ffffff;
   overflow: clip;
+  isolation: isolate;
 }
 
 .home-main::after {
@@ -739,7 +740,7 @@ img {
   width: 100vw;
   height: 100svh;
   height: 100dvh;
-  z-index: 1;
+  z-index: 0;
   pointer-events: none;
   opacity: 1;
   transform: translate3d(0, 0, 0);
@@ -766,7 +767,7 @@ img {
 
 .cinematic-scene {
   position: relative;
-  z-index: 3;
+  z-index: 2;
   width: min(1160px, calc(100% - 48px));
   min-height: 100svh;
   min-height: 100dvh;
@@ -774,6 +775,11 @@ img {
   display: grid;
   align-content: center;
   color: #050505;
+}
+
+.cinematic-scene > * {
+  position: relative;
+  z-index: 2;
 }
 
 .cinematic-label {
@@ -1069,6 +1075,8 @@ img {
 
 .cinematic-cta-row {
   display: flex;
+  position: relative;
+  z-index: 4;
   gap: 14px;
   flex-wrap: wrap;
   justify-content: center;
@@ -2447,6 +2455,21 @@ a:focus-visible {
     min-height: 100dvh;
     padding-top: var(--mobile-nav-clearance);
     padding-bottom: var(--mobile-bottom-space);
+  }
+
+  .cinematic-scene::before {
+    content: "";
+    position: absolute;
+    inset: calc(var(--mobile-nav-clearance) - 28px) -18px calc(var(--mobile-bottom-space) - 18px);
+    z-index: 1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 110% 62% at 50% 42%, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.66) 48%, rgba(255, 255, 255, 0) 76%);
+  }
+
+  .contact-cinematic-scene::before {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.9) 34%, rgba(255, 255, 255, 0.74));
   }
 
   .product-focus-cinematic-scene,
