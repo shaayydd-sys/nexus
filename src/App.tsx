@@ -1404,10 +1404,6 @@ function Footer({ navigate }: { navigate: (path: string, scrollTargetId?: string
           Request a Quote
           <ArrowRight size={16} weight="bold" />
         </button>
-        <a href="https://commons.wikimedia.org/wiki/File:Industrial_storage_tanks.jpg" target="_blank" rel="noreferrer">
-          Image credits
-          <ArrowRight size={16} weight="bold" />
-        </a>
       </div>
     </footer>
   );
