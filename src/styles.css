@@ -25,26 +25,37 @@
   box-sizing: border-box;
 }
 
-html, body {
+html {
   width: 100%;
   min-height: 100%;
+  min-height: 100svh;
+  min-height: 100dvh;
+  max-width: 100%;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
   background: var(--site-bg);
 }
 
-html {
-  overflow-x: hidden;
-}
-
 body {
+  width: 100%;
+  min-height: 100%;
+  min-height: 100svh;
+  min-height: 100dvh;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
   overflow-x: hidden;
   min-width: 320px;
+  background: var(--site-bg);
 }
 
 #root {
   width: 100%;
   min-height: 100%;
+  min-height: 100svh;
+  min-height: 100dvh;
+  max-width: 100%;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
@@ -261,7 +272,6 @@ img {
     inset 0 1px 0 rgba(255, 255, 255, 0.54);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
-  isolation: isolate;
 }
 
 .mobile-menu a {
@@ -290,8 +300,8 @@ img {
 .home-main {
   position: relative;
   z-index: 1;
+  min-height: 100svh;
   min-height: 100dvh;
-  min-height: 100vh;
   background: transparent;
   overflow-x: clip;
   overflow-y: visible;
@@ -305,8 +315,8 @@ img {
 .home-cinematic {
   position: relative;
   width: 100vw;
+  min-height: 100svh;
   min-height: 100dvh;
-  min-height: 100vh;
   margin-left: calc(50% - 50vw);
   background: transparent;
   overflow-x: clip;
@@ -315,7 +325,6 @@ img {
 
 .scroll-section {
   position: relative;
-  height: var(--scroll-section-height, 180dvh);
   height: var(--scroll-section-height, 180vh);
   background: transparent;
 }
@@ -324,10 +333,10 @@ img {
   position: sticky;
   top: 0;
   z-index: 2;
+  height: 100svh;
   height: 100dvh;
-  height: 100vh;
+  min-height: 100svh;
   min-height: 100dvh;
-  min-height: 100vh;
   overflow: hidden;
   isolation: isolate;
 }
@@ -337,8 +346,8 @@ img {
 }
 
 .hero-section {
+  min-height: 100svh;
   min-height: 100dvh;
-  min-height: 100vh;
   padding: 0;
 }
 
@@ -355,8 +364,8 @@ img {
 .concept-hero {
   position: relative;
   width: 100%;
+  min-height: 100svh;
   min-height: 100dvh;
-  min-height: 100vh;
   margin-left: 0;
   padding: 18px 24px;
   overflow: hidden;
@@ -392,7 +401,6 @@ img {
   position: fixed;
   top: 24px;
   left: 50%;
-  transform: translateX(-50%);
   z-index: 1000;
   width: min(560px, calc(100% - 48px));
   height: 72px;
@@ -735,8 +743,7 @@ img {
   opacity: 0.55;
 }
 
-.page-helix-scene,
-.concept-helix-scene {
+.page-helix-scene {
   position: fixed;
   top: -120px;
   right: 0;
@@ -744,15 +751,17 @@ img {
   left: 0;
   width: 100vw;
   height: auto;
-  /* Force the canvas container to extend way beyond the safe areas */
-  min-height: calc(100vh + 240px + env(safe-area-inset-bottom) + env(safe-area-inset-top));
-  min-height: calc(100dvh + 240px + env(safe-area-inset-bottom) + env(safe-area-inset-top));
+  min-height: calc(100lvh + 240px);
+  z-index: 0;
   pointer-events: none;
+  opacity: 1;
   background: var(--site-bg);
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   contain: layout paint size;
   will-change: transform, opacity;
+  -webkit-transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
 }
 
 .shared-helix-background {
@@ -770,8 +779,7 @@ img {
   left: 0;
   width: 100vw;
   height: auto;
-  min-height: calc(100dvh + 240px);
-  min-height: calc(100vh + 240px);
+  min-height: calc(100lvh + 240px);
   pointer-events: none;
   z-index: 0;
   background: var(--site-bg);
@@ -779,6 +787,16 @@ img {
   backface-visibility: hidden;
   contain: layout paint size;
   will-change: transform, opacity;
+}
+
+@supports not (height: 100lvh) {
+  .page-helix-scene,
+  .site-background,
+  .helix-background,
+  .canvas-wrapper,
+  .motion-background {
+    min-height: calc(100vh + 240px);
+  }
 }
 
 .page-helix-scene canvas {
@@ -808,8 +826,8 @@ img {
   position: relative;
   z-index: 2;
   width: min(1160px, calc(100% - 48px));
+  min-height: 100svh;
   min-height: 100dvh;
-  min-height: 100vh;
   margin: 0 auto;
   display: grid;
   align-content: center;
@@ -1145,6 +1163,14 @@ img {
   margin-top: 0;
 }
 
+.concept-helix-scene {
+  position: absolute;
+  inset: -18vh -8vw -28vh -8vw;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 1;
+}
+
 .concept-helix-scene canvas {
   display: block;
   width: 100%;
@@ -1264,8 +1290,8 @@ img {
 .hero-gradient-shell {
   position: relative;
   width: 100%;
+  min-height: 100svh;
   min-height: 100dvh;
-  min-height: 100vh;
   padding: 0;
   background:
     radial-gradient(ellipse at 50% -8%, oklch(0.93 0.006 245 / 0.82), transparent 34%),
@@ -1305,8 +1331,8 @@ img {
 
 .hero-gradient-frame {
   position: relative;
+  min-height: 100svh;
   min-height: 100dvh;
-  min-height: 100vh;
   display: grid;
   align-items: center;
   padding: clamp(22px, 3vw, 32px);
@@ -2421,26 +2447,21 @@ a:focus-visible {
 
 @media (max-width: 768px) {
   :root {
-    --mobile-nav-clearance: max(clamp(92px, 12vh, 112px), calc(env(safe-area-inset-top) + 84px));
-    --mobile-bottom-space: max(clamp(28px, 5vh, 48px), calc(env(safe-area-inset-bottom) + 24px));
+    --mobile-nav-clearance: max(clamp(92px, 12dvh, 112px), calc(env(safe-area-inset-top) + 84px));
+    --mobile-bottom-space: max(clamp(28px, 5dvh, 48px), calc(env(safe-area-inset-bottom) + 24px));
   }
 
-  html, body {
+  html,
+  body,
+  #root {
     width: 100%;
     min-height: 100%;
-    min-height: 100vh;
+    min-height: 100svh;
+    min-height: 100dvh;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
     background: var(--site-bg);
-    /* Crucial fix for iOS safe areas */
-    background-color: #ffffff;
-  }
-
-  body {
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-top: env(safe-area-inset-top);
-    background-color: var(--site-bg);
   }
 
   .scroll-section__sticky,
@@ -2452,13 +2473,13 @@ a:focus-visible {
   .scroll-scene,
   .hero-gradient-shell,
   .hero-gradient-frame {
+    min-height: 100svh;
     min-height: 100dvh;
-    min-height: 100vh;
   }
 
   .scroll-section__sticky {
+    height: 100svh;
     height: 100dvh;
-    height: 100vh;
   }
 
   .page-helix-scene,
@@ -2470,9 +2491,7 @@ a:focus-visible {
     left: 0;
     width: 100vw;
     height: auto;
-    /* Force the canvas container to extend way beyond the safe areas */
-    min-height: calc(100vh + 240px + env(safe-area-inset-bottom) + env(safe-area-inset-top));
-    min-height: calc(100dvh + 240px + env(safe-area-inset-bottom) + env(safe-area-inset-top));
+    min-height: calc(100lvh + 240px);
     pointer-events: none;
     background: var(--site-bg);
     transform: translate3d(0, 0, 0);
@@ -2501,8 +2520,8 @@ a:focus-visible {
     justify-items: stretch;
     overflow: visible;
     min-width: 0;
+    min-height: 100svh;
     min-height: 100dvh;
-    min-height: 100vh;
     padding-top: var(--mobile-nav-clearance);
     padding-bottom: var(--mobile-bottom-space);
   }
@@ -2523,8 +2542,6 @@ a:focus-visible {
     align-items: stretch;
     align-content: start;
     justify-content: center;
-    min-height: 100dvh;
-    min-height: 100vh;
     padding-top: var(--mobile-nav-clearance);
     padding-bottom: var(--mobile-bottom-space);
     text-align: left;
@@ -2536,8 +2553,6 @@ a:focus-visible {
     align-items: stretch;
     align-content: start;
     justify-content: center;
-    min-height: 100dvh;
-    min-height: 100vh;
     padding-top: var(--mobile-nav-clearance);
     padding-bottom: var(--mobile-bottom-space);
     text-align: left;
@@ -2786,14 +2801,24 @@ a:focus-visible {
   }
 }
 
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  body {
-    background-color: var(--site-bg);
+@supports (-webkit-touch-callout: none) {
+  html,
+  body,
+  #root,
+  .page-shell,
+  .home-main,
+  .home-cinematic {
+    min-height: -webkit-fill-available;
   }
 
-  #root {
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-top: env(safe-area-inset-top);
+  .page-helix-scene,
+  .concept-helix-scene,
+  .site-background,
+  .helix-background,
+  .canvas-wrapper,
+  .motion-background {
+    height: auto;
+    min-height: calc(100vh + 240px);
   }
 }
 
@@ -2816,14 +2841,14 @@ a:focus-visible {
   }
 
   .hero-section {
+    min-height: 100svh;
     min-height: 100dvh;
-    min-height: 100vh;
     padding: 0;
   }
 
   .concept-hero {
+    min-height: 100svh;
     min-height: 100dvh;
-    min-height: 100vh;
     padding: 14px 18px;
   }
 
@@ -2888,8 +2913,8 @@ a:focus-visible {
     align-items: stretch;
     justify-content: center;
     width: min(100% - 32px, 560px);
+    min-height: 100svh;
     min-height: 100dvh;
-    min-height: 100vh;
     padding-top: var(--mobile-nav-clearance);
     padding-bottom: var(--mobile-bottom-space);
     min-width: 0;
@@ -2905,8 +2930,6 @@ a:focus-visible {
     align-items: stretch;
     align-content: start;
     justify-content: center;
-    min-height: 100dvh;
-    min-height: 100vh;
     padding-top: var(--mobile-nav-clearance);
     padding-bottom: var(--mobile-bottom-space);
     text-align: left;
@@ -2980,14 +3003,14 @@ a:focus-visible {
   }
 
   .hero-gradient-shell {
+    min-height: 100svh;
     min-height: 100dvh;
-    min-height: 100vh;
     border-radius: 0;
   }
 
   .hero-gradient-frame {
+    min-height: 100svh;
     min-height: 100dvh;
-    min-height: 100vh;
     border-width: 0;
     border-radius: 0;
   }
