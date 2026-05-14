@@ -2,7 +2,6 @@
 
 :root {
   --site-bg: #ffffff;
-  --visual-viewport-height: 100dvh;
   --bg: oklch(0.975 0.006 75);
   --surface: oklch(0.992 0.004 75);
   --surface-muted: oklch(0.945 0.009 75);
@@ -31,7 +30,6 @@ html {
   min-height: 100%;
   min-height: 100svh;
   min-height: 100dvh;
-  min-height: var(--visual-viewport-height);
   max-width: 100%;
   margin: 0;
   padding: 0;
@@ -44,7 +42,6 @@ body {
   min-height: 100%;
   min-height: 100svh;
   min-height: 100dvh;
-  min-height: var(--visual-viewport-height);
   max-width: 100%;
   margin: 0;
   padding: 0;
@@ -58,7 +55,6 @@ body {
   min-height: 100%;
   min-height: 100svh;
   min-height: 100dvh;
-  min-height: var(--visual-viewport-height);
   max-width: 100%;
   margin: 0;
   padding: 0;
@@ -305,7 +301,6 @@ img {
   position: relative;
   min-height: 100svh;
   min-height: 100dvh;
-  min-height: var(--visual-viewport-height);
   background: var(--site-bg);
   overflow-x: clip;
   overflow-y: visible;
@@ -321,7 +316,6 @@ img {
   width: 100vw;
   min-height: 100svh;
   min-height: 100dvh;
-  min-height: var(--visual-viewport-height);
   margin-left: calc(50% - 50vw);
   background: transparent;
   overflow-x: clip;
@@ -750,14 +744,13 @@ img {
 
 .page-helix-scene {
   position: fixed;
-  inset: 0;
+  top: -120px;
+  right: 0;
+  bottom: -120px;
+  left: 0;
   width: 100vw;
-  height: 100svh;
-  height: 100dvh;
-  height: var(--visual-viewport-height);
-  min-height: 100svh;
-  min-height: 100dvh;
-  min-height: var(--visual-viewport-height);
+  height: auto;
+  min-height: calc(100lvh + 240px);
   z-index: 1;
   pointer-events: none;
   opacity: 1;
@@ -779,14 +772,13 @@ img {
 .canvas-wrapper,
 .motion-background {
   position: fixed;
-  inset: 0;
+  top: -120px;
+  right: 0;
+  bottom: -120px;
+  left: 0;
   width: 100vw;
-  height: 100svh;
-  height: 100dvh;
-  height: var(--visual-viewport-height);
-  min-height: 100svh;
-  min-height: 100dvh;
-  min-height: var(--visual-viewport-height);
+  height: auto;
+  min-height: calc(100lvh + 240px);
   pointer-events: none;
   z-index: 0;
   background: var(--site-bg);
@@ -794,6 +786,16 @@ img {
   backface-visibility: hidden;
   contain: layout paint size;
   will-change: transform, opacity;
+}
+
+@supports not (height: 100lvh) {
+  .page-helix-scene,
+  .site-background,
+  .helix-background,
+  .canvas-wrapper,
+  .motion-background {
+    min-height: calc(100vh + 240px);
+  }
 }
 
 .page-helix-scene canvas {
@@ -2455,7 +2457,6 @@ a:focus-visible {
     min-height: 100%;
     min-height: 100svh;
     min-height: 100dvh;
-    min-height: var(--visual-viewport-height);
     margin: 0;
     padding: 0;
     overflow-x: hidden;
@@ -2473,30 +2474,23 @@ a:focus-visible {
   .hero-gradient-frame {
     min-height: 100svh;
     min-height: 100dvh;
-    min-height: var(--visual-viewport-height);
   }
 
   .scroll-section__sticky {
     height: 100svh;
     height: 100dvh;
-    height: var(--visual-viewport-height);
   }
 
   .page-helix-scene,
   .concept-helix-scene {
     position: fixed;
-    top: calc(env(safe-area-inset-top) * -1);
+    top: -120px;
     right: 0;
-    bottom: calc(env(safe-area-inset-bottom) * -1);
+    bottom: -120px;
     left: 0;
     width: 100vw;
     height: auto;
-    height: 100svh;
-    height: 100dvh;
-    height: calc(var(--visual-viewport-height) + env(safe-area-inset-top) + env(safe-area-inset-bottom));
-    min-height: 100svh;
-    min-height: 100dvh;
-    min-height: calc(var(--visual-viewport-height) + env(safe-area-inset-top) + env(safe-area-inset-bottom));
+    min-height: calc(100lvh + 240px);
     pointer-events: none;
     background: var(--site-bg);
     transform: translate3d(0, 0, 0);
@@ -2527,7 +2521,6 @@ a:focus-visible {
     min-width: 0;
     min-height: 100svh;
     min-height: 100dvh;
-    min-height: var(--visual-viewport-height);
     padding-top: var(--mobile-nav-clearance);
     padding-bottom: var(--mobile-bottom-space);
   }
@@ -2823,8 +2816,8 @@ a:focus-visible {
   .helix-background,
   .canvas-wrapper,
   .motion-background {
-    height: -webkit-fill-available;
-    min-height: -webkit-fill-available;
+    height: auto;
+    min-height: calc(100vh + 240px);
   }
 }
 

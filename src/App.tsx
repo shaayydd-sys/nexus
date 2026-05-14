@@ -142,7 +142,6 @@ function App() {
 
   return (
     <>
-      <ViewportRuntime />
       <MotionRuntime page={page} />
       <Header page={page} navigate={navigate} />
       <main className={page === "home" ? "home-main" : undefined}>
@@ -154,42 +153,6 @@ function App() {
       <Footer navigate={navigate} />
     </>
   );
-}
-
-function ViewportRuntime() {
-  useEffect(() => {
-    let frameId = 0;
-
-    const updateViewportHeight = () => {
-      frameId = 0;
-      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-      document.documentElement.style.setProperty("--visual-viewport-height", `${viewportHeight}px`);
-    };
-
-    const requestUpdate = () => {
-      if (frameId) return;
-      frameId = window.requestAnimationFrame(updateViewportHeight);
-    };
-
-    updateViewportHeight();
-    window.addEventListener("resize", requestUpdate, { passive: true });
-    window.addEventListener("orientationchange", requestUpdate, { passive: true });
-    window.visualViewport?.addEventListener("resize", requestUpdate, { passive: true });
-    window.visualViewport?.addEventListener("scroll", requestUpdate, { passive: true });
-
-    return () => {
-      if (frameId) {
-        window.cancelAnimationFrame(frameId);
-      }
-      window.removeEventListener("resize", requestUpdate);
-      window.removeEventListener("orientationchange", requestUpdate);
-      window.visualViewport?.removeEventListener("resize", requestUpdate);
-      window.visualViewport?.removeEventListener("scroll", requestUpdate);
-      document.documentElement.style.removeProperty("--visual-viewport-height");
-    };
-  }, []);
-
-  return null;
 }
 
 function MotionRuntime({ page }: { page: Page }) {
