@@ -482,6 +482,7 @@ function AnimatedCards({ progress, cards, className = "" }: { progress: MotionVa
   const opacity = useTransform(progress, [0, 0.16, 0.78, 1], [0, 1, 1, 0]);
   const y = useTransform(progress, [0, 0.22, 0.82, 1], [70, 0, 0, -60]);
   const trackRef = useRef<HTMLDivElement | null>(null);
+  const scrollFrameRef = useRef<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
   const scrollToCard = (index: number) => {
@@ -489,12 +490,13 @@ function AnimatedCards({ progress, cards, className = "" }: { progress: MotionVa
     if (!track) return;
 
     const nextIndex = Math.max(0, Math.min(cards.length - 1, index));
-    const nextCard = track.children[nextIndex] as HTMLElement | undefined;
+    const slides = Array.from(track.querySelectorAll<HTMLElement>(".carousel-slide"));
+    const nextCard = slides[nextIndex];
     if (!nextCard) return;
 
     setActiveIndex(nextIndex);
     track.scrollTo({
-      left: nextCard.offsetLeft - track.offsetLeft,
+      left: nextCard.offsetLeft,
       behavior: "smooth",
     });
   };
@@ -502,23 +504,40 @@ function AnimatedCards({ progress, cards, className = "" }: { progress: MotionVa
   const handleTrackScroll = () => {
     const track = trackRef.current;
     if (!track) return;
+    if (scrollFrameRef.current !== null) return;
 
-    const cardsInTrack = Array.from(track.children) as HTMLElement[];
-    const trackCenter = track.scrollLeft + track.clientWidth / 2;
-    const closestIndex = cardsInTrack.reduce((closest, card, index) => {
-      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
-      const closestCard = cardsInTrack[closest];
-      const closestCenter = closestCard.offsetLeft + closestCard.offsetWidth / 2;
-      return Math.abs(cardCenter - trackCenter) < Math.abs(closestCenter - trackCenter) ? index : closest;
-    }, 0);
+    scrollFrameRef.current = window.requestAnimationFrame(() => {
+      scrollFrameRef.current = null;
+      const currentTrack = trackRef.current;
+      if (!currentTrack) return;
 
-    setActiveIndex(closestIndex);
+      const slides = Array.from(currentTrack.querySelectorAll<HTMLElement>(".carousel-slide"));
+      if (slides.length === 0) return;
+
+      const trackCenter = currentTrack.scrollLeft + currentTrack.clientWidth / 2;
+      const closestIndex = slides.reduce((closest, card, index) => {
+        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+        const closestCard = slides[closest];
+        const closestCenter = closestCard.offsetLeft + closestCard.offsetWidth / 2;
+        return Math.abs(cardCenter - trackCenter) < Math.abs(closestCenter - trackCenter) ? index : closest;
+      }, 0);
+
+      setActiveIndex((current) => (current === closestIndex ? current : closestIndex));
+    });
   };
 
   useEffect(() => {
     setActiveIndex(0);
     trackRef.current?.scrollTo({ left: 0 });
   }, [cards.length]);
+
+  useEffect(() => {
+    return () => {
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+      }
+    };
+  }, []);
 
   return (
     <motion.div className={`animated-cards ${className}`.trim()} style={{ opacity, y }}>
@@ -928,9 +947,15 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
     camera.position.set(0.2, 0.7, 9.1);
     camera.lookAt(0, -0.15, 0);
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: true,
+      powerPreference: "high-performance",
+    });
     renderer.setClearColor(0xffffff, 0);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
+    const isMobileViewport = () => window.matchMedia("(max-width: 768px)").matches;
+    const getPixelRatio = () => Math.min(window.devicePixelRatio || 1, isMobileViewport() ? 1.5 : 1.8);
+    renderer.setPixelRatio(getPixelRatio());
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.08;
@@ -944,7 +969,8 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.12);
     keyLight.position.set(-2.6, 4.4, 4.8);
     keyLight.castShadow = true;
-    keyLight.shadow.mapSize.set(2048, 2048);
+    const shadowMapSize = isMobileViewport() ? 1024 : 2048;
+    keyLight.shadow.mapSize.set(shadowMapSize, shadowMapSize);
     keyLight.shadow.camera.near = 0.5;
     keyLight.shadow.camera.far = 14;
     scene.add(keyLight);
@@ -996,6 +1022,7 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
     const resize = () => {
       width = mount.clientWidth || 1;
       height = mount.clientHeight || 1;
+      renderer.setPixelRatio(getPixelRatio());
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
@@ -1032,8 +1059,11 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
       const sectionBase = 0.92 - Math.min(currentProgress * 0.2, 0.2);
       const readabilityFade = smoothStep(0.52, 0.74, currentProgress) * (1 - smoothStep(0.86, 1.04, currentProgress));
       const contactReturn = smoothStep(0.86, 1.02, currentProgress) * 0.14;
-      const helixOpacity = Math.max(0.32, sectionBase - readabilityFade * 0.34 + contactReturn);
-      mount.style.opacity = String((1 - footerFade) * helixOpacity);
+      const opacityFloor = width < 760 ? 0.72 : 0.22;
+      const helixOpacity = Math.max(opacityFloor, sectionBase - readabilityFade * 0.34 + contactReturn);
+      const stableOpacity = Math.max(opacityFloor, (1 - footerFade * 0.72) * helixOpacity);
+      mount.style.opacity = stableOpacity.toFixed(3);
+      mount.style.transform = "translate3d(0, 0, 0)";
 
       const idle = reducedMotion ? 0 : time * 0.000035;
       group.position.set(
