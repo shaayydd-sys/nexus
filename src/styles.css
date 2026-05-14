@@ -760,9 +760,22 @@ img {
   width: 100%;
   height: 100%;
   transform: translate3d(0, 0, 0);
+  transform-origin: 50% 45%;
   backface-visibility: hidden;
   -webkit-transform: translate3d(0, 0, 0);
   -webkit-backface-visibility: hidden;
+  animation: helixCanvasDrift 8.5s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes helixCanvasDrift {
+  0% {
+    transform: translate3d(-1.1vw, -0.8vh, 0) scale(1.012) rotate(-0.28deg);
+  }
+
+  100% {
+    transform: translate3d(1.35vw, 1.05vh, 0) scale(1.028) rotate(0.34deg);
+  }
 }
 
 .cinematic-scene {

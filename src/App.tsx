@@ -984,6 +984,7 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
 
     const ribGeometries: RoundedBoxGeometry[] = [];
     const ribMaterials: THREE.MeshStandardMaterial[] = [];
+    const ribs: Array<{ mesh: THREE.Mesh; baseRotationY: number }> = [];
     const ribCount = 128;
     const radius = 0.78;
     const verticalStep = 0.064;
@@ -1011,9 +1012,11 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
 
       const rib = new THREE.Mesh(geometry, material);
       rib.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
-      rib.rotation.set(0, angle * 0.52 - 0.72, 0);
+      const baseRotationY = angle * 0.52 - 0.72;
+      rib.rotation.set(0, baseRotationY, 0);
       rib.castShadow = true;
       rib.receiveShadow = true;
+      ribs.push({ mesh: rib, baseRotationY });
       group.add(rib);
     }
 
@@ -1065,16 +1068,23 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
       mount.style.opacity = stableOpacity.toFixed(3);
       mount.style.transform = "translate3d(0, 0, 0)";
 
-      const idle = reducedMotion ? 0 : time * 0.000035;
+      const idle = reducedMotion ? 0 : time * 0.00016;
+      const breathing = reducedMotion ? 0 : Math.sin(time * 0.00042) * 0.095;
+      const roll = reducedMotion ? 0 : Math.sin(time * 0.00032) * 0.035;
+      if (!reducedMotion) {
+        ribs.forEach((rib, index) => {
+          rib.mesh.rotation.y = rib.baseRotationY + Math.sin(time * 0.00072 + index * 0.18) * 0.022;
+        });
+      }
       group.position.set(
         width < 760 ? -0.38 + currentProgress * 0.12 : -0.64 + currentProgress * 0.22,
-        -0.1 - currentProgress * 2.7,
-        -1.08 + currentProgress * 0.9,
+        -0.1 - currentProgress * 2.7 + breathing,
+        -1.08 + currentProgress * 0.9 + breathing * 0.32,
       );
       group.rotation.set(
-        THREE.MathUtils.degToRad(-14),
+        THREE.MathUtils.degToRad(-14) + roll,
         -0.72 + currentProgress * 1.08 + idle,
-        THREE.MathUtils.degToRad(10),
+        THREE.MathUtils.degToRad(10) - roll * 0.45,
       );
 
       renderer.render(scene, camera);
