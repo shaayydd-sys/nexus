@@ -13,7 +13,6 @@ import {
   List,
   MapPin,
   SealCheck,
-  X,
 } from "@phosphor-icons/react";
 import nexusLogo from "./assets/nexus-logo.svg";
 
@@ -94,12 +93,6 @@ const legalRows = [
   ["KBLI 46651", "Wholesale of chemical products, including industrial chemicals"],
 ];
 
-const imageSources = {
-  tanks: "/images/industrial-storage-tanks.jpg",
-  methanol: "/images/methanol-plant.jpg",
-  plant: "/images/chemical-processing-equipment.jpg",
-};
-
 function getCurrentPage(): Page {
   const hashRoute = window.location.hash.replace(/^#\/?/, "").split(/[?#]/)[0];
   if (hashRoute.startsWith("products")) return "products";
@@ -143,9 +136,9 @@ function App() {
   return (
     <>
       <MotionRuntime page={page} />
-      {page === "home" && <SharedHelixBackground />}
-      <Header page={page} navigate={navigate} />
-      <main className={page === "home" ? "home-main" : undefined}>
+      <SharedHelixBackground />
+      <ConceptTopbar navigate={navigate} />
+      <main className="home-main">
         {page === "home" && <HomePage navigate={navigate} />}
         {page === "products" && <ProductsPage navigate={navigate} />}
         {page === "about" && <AboutPage navigate={navigate} />}
@@ -282,91 +275,6 @@ function MotionRuntime({ page }: { page: Page }) {
   return null;
 }
 
-function Header({ page, navigate }: { page: Page; navigate: (path: string, scrollTargetId?: string) => void }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  const handleNav = (path: string) => {
-    setMenuOpen(false);
-    navigate(path);
-  };
-
-  return (
-    <header className={`site-header ${page === "home" ? "home-header" : ""}`} data-reveal>
-      <a
-        className="brand-mark cursor-pointer"
-        href="#/"
-        onClick={(event) => {
-          event.preventDefault();
-          handleNav("#/");
-        }}
-        aria-label="PT NEXUS CHEM BRIDGE home"
-      >
-        <span className="brand-symbol" aria-hidden="true" />
-        <span>PT NEXUS CHEM BRIDGE</span>
-      </a>
-
-      <nav className="desktop-nav" aria-label="Primary navigation">
-        {navItems.map((item) => (
-          <a
-            key={item.page}
-            href={item.path}
-            className={item.page === page ? "active" : ""}
-            onClick={(event) => {
-              event.preventDefault();
-              handleNav(item.path);
-            }}
-          >
-            {item.label}
-          </a>
-        ))}
-      </nav>
-
-      <div className="header-actions">
-        <button className="text-cta" type="button" onClick={() => navigate("#/contact", "contact-form")}>
-          Discuss Supply
-          <ArrowRight size={14} weight="bold" />
-        </button>
-        <button
-          className="menu-button"
-          type="button"
-          aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((value) => !value)}
-        >
-          {menuOpen ? <X size={18} weight="bold" /> : <List size={18} weight="bold" />}
-        </button>
-      </div>
-
-      {menuOpen && (
-        <div className="mobile-menu" data-reveal>
-          {navItems.map((item) => (
-            <a
-              key={item.page}
-              href={item.path}
-              onClick={(event) => {
-                event.preventDefault();
-                handleNav(item.path);
-              }}
-            >
-              {item.label}
-            </a>
-          ))}
-          <button
-            type="button"
-            onClick={() => {
-              setMenuOpen(false);
-              navigate("#/contact", "contact-form");
-            }}
-          >
-            Request a Quote
-            <ArrowRight size={16} weight="bold" />
-          </button>
-        </div>
-      )}
-    </header>
-  );
-}
-
 type ScrollSectionRenderProps = {
   progress: MotionValue<number>;
 };
@@ -390,7 +298,6 @@ type AnimatedCardData = {
 function HomePage({ navigate }: { navigate: (path: string, scrollTargetId?: string) => void }) {
   return (
     <PageShell>
-      <ConceptTopbar navigate={navigate} />
       <div className="home-cinematic">
         <ScrollSection className="hero-scroll-stage" height="200vh">
           {({ progress }) => <HeroProductsScene progress={progress} />}
@@ -478,26 +385,61 @@ function AnimatedParagraph({ progress, children, className = "" }: { progress: M
 }
 
 function AnimatedCards({ progress, cards, className = "" }: { progress: MotionValue<number>; cards: AnimatedCardData[]; className?: string }) {
-  const opacity = useTransform(progress, [0, 0.16, 0.78, 1], [0, 1, 1, 0]);
-  const y = useTransform(progress, [0, 0.22, 0.82, 1], [70, 0, 0, -60]);
+  const opacity = useTransform(progress, [0, 0.16, 0.9, 1], [0, 1, 1, 0]);
+  const y = useTransform(progress, [0, 0.22, 0.86, 1], [70, 0, 0, 24]);
   const trackRef = useRef<HTMLDivElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
+  const settleTimerRef = useRef<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isCarouselMode, setIsCarouselMode] = useState(false);
+  const cloneCount = Math.min(3, cards.length);
+  const carouselCards = [
+    ...cards.slice(Math.max(cards.length - cloneCount, 0)).map((card) => ({ ...card, cloneKey: "head" })),
+    ...cards.map((card) => ({ ...card, cloneKey: "real" })),
+    ...cards.slice(0, cloneCount).map((card) => ({ ...card, cloneKey: "tail" })),
+  ];
 
-  const scrollToCard = (index: number) => {
+  const alignVisualCard = (visualIndex: number, behavior: ScrollBehavior = "smooth") => {
     const track = trackRef.current;
+    const viewport = viewportRef.current;
     if (!track) return;
 
-    const nextIndex = Math.max(0, Math.min(cards.length - 1, index));
     const slides = Array.from(track.querySelectorAll<HTMLElement>(".carousel-slide"));
-    const nextCard = slides[nextIndex];
+    const nextCard = slides[visualIndex];
     if (!nextCard) return;
 
-    setActiveIndex(nextIndex);
+    const viewportWidth = viewport?.clientWidth ?? track.clientWidth;
+    const targetLeft = nextCard.offsetLeft - Math.max((viewportWidth - nextCard.offsetWidth) / 2, 0);
     track.scrollTo({
-      left: nextCard.offsetLeft,
-      behavior: "smooth",
+      left: Math.max(targetLeft, 0),
+      behavior,
     });
+  };
+
+  const scrollToCard = (index: number) => {
+    if (cards.length === 0) return;
+
+    const lastIndex = cards.length - 1;
+    const movingForwardFromEnd = activeIndex === lastIndex && index > lastIndex;
+    const movingBackwardFromStart = activeIndex === 0 && index < 0;
+    const nextIndex = ((index % cards.length) + cards.length) % cards.length;
+
+    setActiveIndex(nextIndex);
+
+    if (movingForwardFromEnd) {
+      alignVisualCard(cloneCount + cards.length, "smooth");
+      window.setTimeout(() => alignVisualCard(cloneCount, "auto"), 460);
+      return;
+    }
+
+    if (movingBackwardFromStart) {
+      alignVisualCard(cloneCount - 1, "smooth");
+      window.setTimeout(() => alignVisualCard(cloneCount + lastIndex, "auto"), 460);
+      return;
+    }
+
+    alignVisualCard(cloneCount + nextIndex, "smooth");
   };
 
   const handleTrackScroll = () => {
@@ -521,59 +463,127 @@ function AnimatedCards({ progress, cards, className = "" }: { progress: MotionVa
         return Math.abs(cardCenter - trackCenter) < Math.abs(closestCenter - trackCenter) ? index : closest;
       }, 0);
 
-      setActiveIndex((current) => (current === closestIndex ? current : closestIndex));
+      const logicalIndex = ((closestIndex - cloneCount) % cards.length + cards.length) % cards.length;
+      setActiveIndex((current) => (current === logicalIndex ? current : logicalIndex));
+
+      if (settleTimerRef.current !== null) {
+        window.clearTimeout(settleTimerRef.current);
+      }
+
+      settleTimerRef.current = window.setTimeout(() => {
+        const visualIndex = closestIndex;
+        if (visualIndex < cloneCount) {
+          alignVisualCard(cloneCount + logicalIndex, "auto");
+        } else if (visualIndex >= cloneCount + cards.length) {
+          alignVisualCard(cloneCount + logicalIndex, "auto");
+        }
+      }, 140);
     });
   };
 
   useEffect(() => {
+    const media = window.matchMedia("(max-height: 1300px), (max-width: 900px)");
+    const update = () => setIsCarouselMode(media.matches);
+
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
     setActiveIndex(0);
-    trackRef.current?.scrollTo({ left: 0 });
-  }, [cards.length]);
+    if (isCarouselMode) {
+      window.requestAnimationFrame(() => alignVisualCard(cloneCount, "auto"));
+    } else {
+      trackRef.current?.scrollTo({ left: 0 });
+    }
+  }, [cards.length, cloneCount, isCarouselMode]);
 
   useEffect(() => {
     return () => {
       if (scrollFrameRef.current !== null) {
         window.cancelAnimationFrame(scrollFrameRef.current);
       }
+      if (settleTimerRef.current !== null) {
+        window.clearTimeout(settleTimerRef.current);
+      }
     };
   }, []);
 
+  const renderCard = (card: AnimatedCardData, index: number, key: string) => (
+    <div className="carousel-slide" key={key}>
+      <div className="card-shadow-wrapper">
+        <AnimatedCard index={index}>
+          {card.icon && <div className="animated-card__icon">{card.icon}</div>}
+          <span>{card.label}</span>
+          <strong>{card.title}</strong>
+          <p>{card.text}</p>
+        </AnimatedCard>
+      </div>
+    </div>
+  );
+
   return (
     <motion.div className={`animated-cards ${className}`.trim()} style={{ opacity, y }}>
-      <div className="animated-cards-viewport">
-        <div className="animated-cards-track" ref={trackRef} onScroll={handleTrackScroll}>
-          {cards.map((card, index) => (
-            <div className="carousel-slide" key={card.title}>
-              <div className="card-shadow-wrapper">
-                <AnimatedCard index={index}>
-                  {card.icon && <div className="animated-card__icon">{card.icon}</div>}
-                  <span>{card.label}</span>
-                  <strong>{card.title}</strong>
-                  <p>{card.text}</p>
-                </AnimatedCard>
-              </div>
-            </div>
-          ))}
+      <div className="animated-cards-grid">
+        {cards.map((card, index) => renderCard(card, index, `grid-${card.title}`))}
+      </div>
+
+      <div className="animated-cards-carousel">
+        <button className="carousel-side-arrow carousel-side-arrow-left" type="button" aria-label="Previous card" onClick={() => scrollToCard(activeIndex - 1)}>
+          {"<"}
+        </button>
+        <div className="animated-cards-viewport" ref={viewportRef}>
+          <div className="animated-cards-track" ref={trackRef} onScroll={handleTrackScroll}>
+            {carouselCards.map((card, index) => {
+              const logicalIndex = ((index - cloneCount) % cards.length + cards.length) % cards.length;
+              const distance = Math.min(Math.abs(logicalIndex - activeIndex), cards.length - Math.abs(logicalIndex - activeIndex));
+              return (
+                <div className="carousel-slide" data-distance={Math.min(distance, 2)} key={`carousel-${card.cloneKey}-${index}-${card.title}`}>
+                  <div className="card-shadow-wrapper">
+                    <AnimatedCard index={logicalIndex}>
+                      {card.icon && <div className="animated-card__icon">{card.icon}</div>}
+                      <span>{card.label}</span>
+                      <strong>{card.title}</strong>
+                      <p>{card.text}</p>
+                    </AnimatedCard>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
+        <button className="carousel-side-arrow carousel-side-arrow-right" type="button" aria-label="Next card" onClick={() => scrollToCard(activeIndex + 1)}>
+          {">"}
+        </button>
+        {cards.length > 1 && (
+          <div className="carousel-controls" aria-label="Card carousel controls">
+            <button className="carousel-arrow" type="button" aria-label="Previous card" onClick={() => scrollToCard(activeIndex - 1)}>
+              {"<"}
+            </button>
+            <button className="carousel-arrow" type="button" aria-label="Next card" onClick={() => scrollToCard(activeIndex + 1)}>
+              {">"}
+            </button>
+            <div className="carousel-dots">
+              {cards.map((card, index) => (
+                <button
+                  className={`carousel-dot ${index === activeIndex ? "active" : ""}`.trim()}
+                  key={card.title}
+                  type="button"
+                  aria-label={`Go to card ${index + 1}`}
+                  onClick={() => scrollToCard(index)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       {cards.length > 1 && (
-        <div className="carousel-controls" aria-label="Card carousel controls">
-          <button
-            className="carousel-arrow"
-            type="button"
-            aria-label="Previous card"
-            disabled={activeIndex === 0}
-            onClick={() => scrollToCard(activeIndex - 1)}
-          >
+        <div className="carousel-controls animated-cards-grid-controls" aria-label="Card carousel controls">
+          <button className="carousel-arrow" type="button" aria-label="Previous card" onClick={() => scrollToCard(activeIndex - 1)}>
             {"<"}
           </button>
-          <button
-            className="carousel-arrow"
-            type="button"
-            aria-label="Next card"
-            disabled={activeIndex === cards.length - 1}
-            onClick={() => scrollToCard(activeIndex + 1)}
-          >
+          <button className="carousel-arrow" type="button" aria-label="Next card" onClick={() => scrollToCard(activeIndex + 1)}>
             {">"}
           </button>
           <div className="carousel-dots">
@@ -1029,7 +1039,7 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
-      const scale = width < 760 ? 1.24 : 1.48;
+      const scale = width < 760 ? 1.46 : 1.48;
       group.scale.setScalar(scale);
     };
 
@@ -1081,7 +1091,7 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
       }
       group.position.set(
         width < 760 ? -0.38 + currentProgress * 0.12 : -0.64 + currentProgress * 0.22,
-        -0.1 - currentProgress * 2.7 + breathing,
+        width < 760 ? 0.18 - currentProgress * 3.35 + breathing : -0.1 - currentProgress * 2.7 + breathing,
         -1.08 + currentProgress * 0.9 + breathing * 0.32,
       );
       group.rotation.set(
@@ -1112,32 +1122,14 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
 function ProductsPage({ navigate }: { navigate: (path: string, scrollTargetId?: string) => void }) {
   return (
     <PageShell>
-      <PageIntro
-        eyebrow="Products"
-        title="Chemical categories for qualified commercial inquiries."
-        text="The portfolio is provisional until exact product names, grades, and supply parameters are finalized. Each category routes to a direct inquiry path."
-      />
-      <section className="product-page-list" data-reveal>
-        <h2 className="sr-only">Product categories</h2>
-        <ProductRows navigate={navigate} />
-      </section>
-      <section className="split-section compact">
-        <div className="section-index" data-reveal>
-          <span>02</span>
-          <p>How inquiries work</p>
-        </div>
-        <div className="section-copy" data-reveal>
-          <h2>Send the product, volume, destination, and documentation needs.</h2>
-          <p>
-            The contact form asks for enough commercial context to begin a useful conversation
-            without turning the website into a dense commodity catalog too early.
-          </p>
-          <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
-            Discuss Supply
-            <ArrowRight size={18} weight="bold" />
-          </button>
-        </div>
-      </section>
+      <div className="home-cinematic page-cinematic products-page-cinematic">
+        <ScrollSection className="products-catalog-scene" height="190vh">
+          {({ progress }) => <ProductsCatalogScene progress={progress} navigate={navigate} />}
+        </ScrollSection>
+        <ScrollSection className="products-inquiry-scene" height="170vh">
+          {({ progress }) => <ProductsInquiryScene progress={progress} navigate={navigate} />}
+        </ScrollSection>
+      </div>
     </PageShell>
   );
 }
@@ -1145,59 +1137,14 @@ function ProductsPage({ navigate }: { navigate: (path: string, scrollTargetId?: 
 function AboutPage({ navigate }: { navigate: (path: string, scrollTargetId?: string) => void }) {
   return (
     <PageShell>
-      <PageIntro
-        eyebrow="About Us"
-        title="A registered Indonesian company focused on chemical trade brokerage."
-        text="PT NEXUS CHEM BRIDGE is positioned for international B2B trading conversations across industrial chemicals, fertilizers, and basic chemical commodities."
-      />
-
-      <section className="legal-panel" data-reveal>
-        <div className="legal-heading">
-          <Buildings size={24} weight="duotone" />
-          <div>
-            <p className="eyebrow">Company profile</p>
-            <h2>Legal and operating details</h2>
-          </div>
-        </div>
-        <div className="legal-rows">
-          {legalRows.map(([label, value], index) => (
-            <motion.div
-              className="legal-row info-card"
-              key={label}
-              initial={{ opacity: 0, y: 40, filter: "blur(8px)" }}
-              whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              whileHover={{
-                y: -6,
-                scale: 1.015,
-                transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
-              }}
-              viewport={{ once: true, amount: 0.25 }}
-              transition={{ duration: 0.52, delay: index * 0.06, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <span>{label}</span>
-              <strong>{value}</strong>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      <section className="shareholder-grid" data-reveal>
-        <InfoBlock title="Shareholders" text="Ljubisa Stevanovic, 50%. Sabareesh Madhavan, 50%." />
-        <InfoBlock title="Business scope" text="International trading and brokerage of industrial chemicals and related products." />
-        <InfoBlock title="License" text="NIB 1603260067144 serves as the main business license." />
-      </section>
-
-      <section className="image-band quiet" data-reveal>
-        <img data-parallax="28" src={imageSources.plant} alt="Industrial chemical processing equipment" />
-        <div>
-          <span>Commercial contact</span>
-          <h2>For product discussions, use the inquiry form and include the target category.</h2>
-          <button className="primary-button inverse" type="button" onClick={() => navigate("#/contact", "contact-form")}>
-            Contact Us
-            <ArrowRight size={18} weight="bold" />
-          </button>
-        </div>
-      </section>
+      <div className="home-cinematic page-cinematic about-page-cinematic">
+        <ScrollSection className="about-profile-scene" height="185vh">
+          {({ progress }) => <AboutProfileScene progress={progress} navigate={navigate} />}
+        </ScrollSection>
+        <ScrollSection className="about-legal-scene" height="200vh">
+          {({ progress }) => <AboutLegalScene progress={progress} navigate={navigate} />}
+        </ScrollSection>
+      </div>
     </PageShell>
   );
 }
@@ -1205,15 +1152,174 @@ function AboutPage({ navigate }: { navigate: (path: string, scrollTargetId?: str
 function ContactPage() {
   return (
     <PageShell>
-      <PageIntro
-        eyebrow="Contact Us"
-        title="Send a chemical supply or brokerage inquiry."
-        text="Share the product category, destination, volume range, and documentation needs. The team can use that context to start the right commercial discussion."
-      />
-      <section className="contact-layout" id="contact-form">
+      <div className="home-cinematic page-cinematic contact-page-cinematic">
+        <ScrollSection className="contact-form-scroll-scene" height="195vh">
+          {({ progress }) => <ContactFormScene progress={progress} />}
+        </ScrollSection>
+      </div>
+    </PageShell>
+  );
+}
+
+function ProductsCatalogScene({ progress, navigate }: { progress: MotionValue<number>; navigate: (path: string, scrollTargetId?: string) => void }) {
+  const ctaOpacity = useTransform(progress, [0.18, 0.34, 0.82, 1], [0, 1, 1, 0]);
+  const ctaY = useTransform(progress, [0.18, 0.34, 0.82, 1], [28, 0, 0, -32]);
+  const productCards = products.map((product) => ({
+    label: product.status,
+    title: product.name,
+    text: product.description,
+    icon: <List size={22} weight="duotone" />,
+  }));
+
+  return (
+    <div className="cinematic-scene card-cinematic-scene page-cinematic-scene">
+      <span className="cinematic-label">Products</span>
+      <AnimatedTitle progress={progress}>Six starting categories for qualified chemical inquiries.</AnimatedTitle>
+      <AnimatedParagraph progress={progress}>
+        Product names, grade, origin, packaging, availability, and documentation are confirmed through direct commercial inquiry.
+      </AnimatedParagraph>
+      <AnimatedCards progress={progress} cards={productCards} className="product-category-cards page-product-cards" />
+      <motion.div className="cinematic-cta-row" style={{ opacity: ctaOpacity, y: ctaY }}>
+        <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
+          Request a Quote
+          <ArrowRight size={18} weight="bold" />
+        </button>
+        <button className="secondary-button" type="button" onClick={() => navigate("#/about")}>
+          View Company Details
+          <ArrowRight size={18} weight="bold" />
+        </button>
+      </motion.div>
+    </div>
+  );
+}
+
+function ProductsInquiryScene({ progress, navigate }: { progress: MotionValue<number>; navigate: (path: string, scrollTargetId?: string) => void }) {
+  const cards: AnimatedCardData[] = [
+    {
+      label: "01",
+      title: "Product basics",
+      text: "Share category, grade target, volume range, and destination before pricing or documentation discussions begin.",
+      icon: <FileText size={22} weight="duotone" />,
+    },
+    {
+      label: "02",
+      title: "Commercial fit",
+      text: "The team evaluates counterparties, documentation needs, packaging, and practical trading path.",
+      icon: <SealCheck size={22} weight="duotone" />,
+    },
+    {
+      label: "03",
+      title: "Supply discussion",
+      text: "Qualified conversations move toward available terms, origin, timing, and next documentation steps.",
+      icon: <ArrowRight size={22} weight="duotone" />,
+    },
+  ];
+  const ctaOpacity = useTransform(progress, [0.2, 0.36, 0.82, 1], [0, 1, 1, 0]);
+  const ctaY = useTransform(progress, [0.2, 0.36, 0.82, 1], [30, 0, 0, -34]);
+
+  return (
+    <div className="cinematic-scene card-cinematic-scene page-cinematic-scene">
+      <span className="cinematic-label">Inquiry path</span>
+      <AnimatedTitle progress={progress}>Start with product, volume, destination, and documents.</AnimatedTitle>
+      <AnimatedParagraph progress={progress}>
+        The website stays intentionally concise. Specific supply parameters are handled through the contact form instead of a generic catalog exchange.
+      </AnimatedParagraph>
+      <AnimatedCards progress={progress} cards={cards} className="activity-cards page-process-cards" />
+      <motion.div className="cinematic-cta-row" style={{ opacity: ctaOpacity, y: ctaY }}>
+        <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
+          Discuss Supply
+          <ArrowRight size={18} weight="bold" />
+        </button>
+      </motion.div>
+    </div>
+  );
+}
+
+function AboutProfileScene({ progress, navigate }: { progress: MotionValue<number>; navigate: (path: string, scrollTargetId?: string) => void }) {
+  const cards: AnimatedCardData[] = [
+    {
+      label: "Legal name",
+      title: "PT NEXUS CHEM BRIDGE",
+      text: "Indonesia-registered chemical trading and brokerage company.",
+      icon: <Buildings size={22} weight="duotone" />,
+    },
+    {
+      label: "Business scope",
+      title: "International brokerage",
+      text: "Industrial chemicals, fertilizers, and related basic chemical commodities.",
+      icon: <List size={22} weight="duotone" />,
+    },
+    {
+      label: "Main license",
+      title: "NIB 1603260067144",
+      text: "Business identification number serving as the primary company license.",
+      icon: <SealCheck size={22} weight="duotone" />,
+    },
+  ];
+  const ctaOpacity = useTransform(progress, [0.2, 0.36, 0.82, 1], [0, 1, 1, 0]);
+  const ctaY = useTransform(progress, [0.2, 0.36, 0.82, 1], [28, 0, 0, -32]);
+
+  return (
+    <div className="cinematic-scene card-cinematic-scene page-cinematic-scene">
+      <span className="cinematic-label">About Us</span>
+      <AnimatedTitle progress={progress}>A registered Indonesian company for chemical trade brokerage.</AnimatedTitle>
+      <AnimatedParagraph progress={progress}>
+        The company profile is kept close to the inquiry path so buyers and suppliers can verify the business before opening a commercial discussion.
+      </AnimatedParagraph>
+      <AnimatedCards progress={progress} cards={cards} className="legal-cards page-profile-cards" />
+      <motion.div className="cinematic-cta-row" style={{ opacity: ctaOpacity, y: ctaY }}>
+        <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
+          Contact Us
+          <ArrowRight size={18} weight="bold" />
+        </button>
+      </motion.div>
+    </div>
+  );
+}
+
+function AboutLegalScene({ progress, navigate }: { progress: MotionValue<number>; navigate: (path: string, scrollTargetId?: string) => void }) {
+  const legalCards = legalRows.map(([label, value]) => ({
+    label,
+    title: value,
+    text: label.includes("KBLI") ? "Registered business activity for wholesale and chemical product trade." : "Company verification detail for commercial counterparties.",
+    icon: label.includes("Address") ? <MapPin size={22} weight="duotone" /> : <FileText size={22} weight="duotone" />,
+  }));
+  const ctaOpacity = useTransform(progress, [0.2, 0.36, 0.82, 1], [0, 1, 1, 0]);
+  const ctaY = useTransform(progress, [0.2, 0.36, 0.82, 1], [28, 0, 0, -32]);
+
+  return (
+    <div className="cinematic-scene card-cinematic-scene page-cinematic-scene">
+      <span className="cinematic-label">Legal information</span>
+      <AnimatedTitle progress={progress}>Company information stays visible, simple, and verifiable.</AnimatedTitle>
+      <AnimatedParagraph progress={progress}>
+        Registration, tax, address, director, and business activity details are presented as separate liquid glass records.
+      </AnimatedParagraph>
+      <AnimatedCards progress={progress} cards={legalCards} className="legal-cards page-legal-cards" />
+      <motion.div className="cinematic-cta-row" style={{ opacity: ctaOpacity, y: ctaY }}>
+        <button className="secondary-button" type="button" onClick={() => navigate("#/products")}>
+          View Product Categories
+          <ArrowRight size={18} weight="bold" />
+        </button>
+      </motion.div>
+    </div>
+  );
+}
+
+function ContactFormScene({ progress }: { progress: MotionValue<number> }) {
+  const contentOpacity = useTransform(progress, [0, 0.16, 0.84, 1], [0, 1, 1, 0]);
+  const contentY = useTransform(progress, [0, 0.22, 0.84, 1], [72, 0, 0, -64]);
+
+  return (
+    <div className="cinematic-scene contact-cinematic-scene contact-page-scene" id="contact-form">
+      <span className="cinematic-label">Contact Us</span>
+      <AnimatedTitle progress={progress}>Send a chemical supply or brokerage inquiry.</AnimatedTitle>
+      <AnimatedParagraph progress={progress}>
+        Share the product category, destination, volume range, and documentation needs so the team can start the right commercial discussion.
+      </AnimatedParagraph>
+      <motion.section className="contact-layout cinematic-contact-layout" style={{ opacity: contentOpacity, y: contentY }}>
         <ContactForm />
-        <aside className="contact-card" data-reveal>
-          <p className="eyebrow">Company details</p>
+        <aside className="contact-card info-card">
+          <span>Company details</span>
           <h2>PT NEXUS CHEM BRIDGE</h2>
           <dl>
             <div>
@@ -1230,8 +1336,8 @@ function ContactPage() {
             </div>
           </dl>
         </aside>
-      </section>
-    </PageShell>
+      </motion.section>
+    </div>
   );
 }
 
@@ -1262,7 +1368,7 @@ function ContactForm() {
   };
 
   return (
-    <form className="contact-form" onSubmit={handleSubmit} noValidate data-reveal>
+    <form className="contact-form liquid-form" onSubmit={handleSubmit} noValidate>
       <div className="form-grid">
         <Field label="Name" name="name" error={errors.name}>
           <input id="name" name="name" autoComplete="name" placeholder="Your full name" />
@@ -1333,61 +1439,6 @@ function Field({
       {helper && <p className="helper-text">{helper}</p>}
       {error && <p className="error-text">{error}</p>}
     </div>
-  );
-}
-
-function ProductRows({ limit, navigate }: { limit?: number; navigate: (path: string, scrollTargetId?: string) => void }) {
-  return (
-    <div className="product-rows">
-      {products.slice(0, limit).map((product, index) => (
-        <article className="product-row" key={product.name} data-reveal style={{ "--index": index } as React.CSSProperties}>
-          <span className="row-number">{String(index + 1).padStart(2, "0")}</span>
-          <div>
-            <p>{product.status}</p>
-            <h3>{product.name}</h3>
-          </div>
-          <p>{product.description}</p>
-          <div className="tag-list">
-            {product.tags.map((tag) => (
-              <span key={tag}>{tag}</span>
-            ))}
-          </div>
-          <button type="button" aria-label={`Inquire about ${product.name}`} onClick={() => navigate("#/contact", "contact-form")}>
-            <ArrowRight size={18} weight="bold" />
-          </button>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function InfoBlock({ title, text }: { title: string; text: string }) {
-  return (
-    <motion.div
-      className="info-block info-card"
-      initial={{ opacity: 0, y: 40, filter: "blur(8px)" }}
-      whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      whileHover={{
-        y: -6,
-        scale: 1.015,
-        transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
-      }}
-      viewport={{ once: true, amount: 0.25 }}
-      transition={{ duration: 0.52, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <h3>{title}</h3>
-      <p>{text}</p>
-    </motion.div>
-  );
-}
-
-function PageIntro({ eyebrow, title, text }: { eyebrow: string; title: string; text: string }) {
-  return (
-    <section className="page-intro" data-reveal>
-      <p className="eyebrow">{eyebrow}</p>
-      <h1>{title}</h1>
-      <p>{text}</p>
-    </section>
   );
 }
 
