@@ -274,7 +274,7 @@ function App() {
       <ConceptTopbar navigate={navigate} />
       <main className="home-main">
         {page === "home" && <HomePage navigate={navigate} onProductSelect={setSelectedProduct} />}
-        {page === "products" && <ProductsPage navigate={navigate} />}
+        {page === "products" && <ProductsPage navigate={navigate} onProductSelect={setSelectedProduct} />}
         {page === "about" && <AboutPage navigate={navigate} />}
         {page === "contact" && <ContactPage />}
       </main>
@@ -557,10 +557,20 @@ function ScrollSection({ label, title, text, height = "180vh", className = "", c
   );
 }
 
-function AnimatedTitle({ progress, children, className = "" }: { progress: MotionValue<number>; children: ReactNode; className?: string }) {
-  const opacity = useTransform(progress, [0, 0.15, 0.75, 1], [0, 1, 1, 0]);
-  const y = useTransform(progress, [0, 0.2, 0.8, 1], [80, 0, 0, -80]);
-  const scale = useTransform(progress, [0, 0.3, 1], [0.96, 1, 1.04]);
+function AnimatedTitle({
+  progress,
+  children,
+  className = "",
+  startVisible = false,
+}: {
+  progress: MotionValue<number>;
+  children: ReactNode;
+  className?: string;
+  startVisible?: boolean;
+}) {
+  const opacity = useTransform(progress, startVisible ? [0, 0.75, 1] : [0, 0.15, 0.75, 1], startVisible ? [1, 1, 0] : [0, 1, 1, 0]);
+  const y = useTransform(progress, startVisible ? [0, 0.8, 1] : [0, 0.2, 0.8, 1], startVisible ? [0, 0, -80] : [80, 0, 0, -80]);
+  const scale = useTransform(progress, startVisible ? [0, 1] : [0, 0.3, 1], startVisible ? [1, 1.04] : [0.96, 1, 1.04]);
 
   return (
     <motion.h2 className={`animated-title ${className}`.trim()} style={{ opacity, y, scale }}>
@@ -569,9 +579,19 @@ function AnimatedTitle({ progress, children, className = "" }: { progress: Motio
   );
 }
 
-function AnimatedParagraph({ progress, children, className = "" }: { progress: MotionValue<number>; children: ReactNode; className?: string }) {
-  const opacity = useTransform(progress, [0, 0.22, 0.78, 1], [0, 1, 1, 0]);
-  const y = useTransform(progress, [0, 0.28, 0.82, 1], [80, 0, 0, -56]);
+function AnimatedParagraph({
+  progress,
+  children,
+  className = "",
+  startVisible = false,
+}: {
+  progress: MotionValue<number>;
+  children: ReactNode;
+  className?: string;
+  startVisible?: boolean;
+}) {
+  const opacity = useTransform(progress, startVisible ? [0, 0.78, 1] : [0, 0.22, 0.78, 1], startVisible ? [1, 1, 0] : [0, 1, 1, 0]);
+  const y = useTransform(progress, startVisible ? [0, 0.82, 1] : [0, 0.28, 0.82, 1], startVisible ? [0, 0, -56] : [80, 0, 0, -56]);
 
   return (
     <motion.p className={`animated-paragraph ${className}`.trim()} style={{ opacity, y }}>
@@ -585,14 +605,16 @@ function AnimatedCards({
   cards,
   className = "",
   onCardClick,
+  startVisible = false,
 }: {
   progress: MotionValue<number>;
   cards: AnimatedCardData[];
   className?: string;
   onCardClick?: (card: AnimatedCardData, index: number) => void;
+  startVisible?: boolean;
 }) {
-  const opacity = useTransform(progress, [0, 0.16, 0.9, 1], [0, 1, 1, 0]);
-  const y = useTransform(progress, [0, 0.22, 0.86, 1], [70, 0, 0, 24]);
+  const opacity = useTransform(progress, startVisible ? [0, 0.9, 1] : [0, 0.16, 0.9, 1], startVisible ? [1, 1, 0] : [0, 1, 1, 0]);
+  const y = useTransform(progress, startVisible ? [0, 0.86, 1] : [0, 0.22, 0.86, 1], startVisible ? [0, 0, 24] : [70, 0, 0, 24]);
   const [activeIndex, setActiveIndex] = useState(0);
 
   const loopIndex = (index: number) => {
@@ -1433,10 +1455,19 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
   return <div className={className} ref={mountRef} aria-hidden="true" />;
 }
 
-function ProductsPage({ navigate }: { navigate: (path: string, scrollTargetId?: string) => void }) {
+function ProductsPage({
+  navigate,
+  onProductSelect,
+}: {
+  navigate: (path: string, scrollTargetId?: string) => void;
+  onProductSelect: (product: Product) => void;
+}) {
   return (
     <PageShell>
       <div className="home-cinematic page-cinematic products-page-cinematic">
+        <ScrollSection className="products-catalog-scene" height="190vh">
+          {({ progress }) => <ProductsCatalogScene progress={progress} navigate={navigate} onProductSelect={onProductSelect} />}
+        </ScrollSection>
         <ScrollSection className="products-inquiry-scene" height="170vh">
           {({ progress }) => <ProductsInquiryScene progress={progress} navigate={navigate} />}
         </ScrollSection>
@@ -1469,6 +1500,58 @@ function ContactPage() {
         </ScrollSection>
       </div>
     </PageShell>
+  );
+}
+
+function ProductsCatalogScene({
+  progress,
+  navigate,
+  onProductSelect,
+}: {
+  progress: MotionValue<number>;
+  navigate: (path: string, scrollTargetId?: string) => void;
+  onProductSelect: (product: Product) => void;
+}) {
+  const ctaOpacity = useTransform(progress, [0, 0.82, 1], [1, 1, 0]);
+  const ctaY = useTransform(progress, [0, 0.82, 1], [0, 0, -32]);
+  const productCards: ProductCardData[] = products.map((product) => ({
+    label: product.previewLabel,
+    title: product.name,
+    text: product.shortDescription,
+    product,
+  }));
+
+  return (
+    <div className="cinematic-scene card-cinematic-scene page-cinematic-scene">
+      <span className="cinematic-label">Products</span>
+      <AnimatedTitle progress={progress} startVisible>
+        Six starting categories for qualified chemical inquiries.
+      </AnimatedTitle>
+      <AnimatedParagraph progress={progress} startVisible>
+        Product names, grade, origin, packaging, availability, and documentation are confirmed through direct commercial inquiry.
+      </AnimatedParagraph>
+      <AnimatedCards
+        progress={progress}
+        cards={productCards}
+        className="product-category-cards page-product-cards"
+        onCardClick={(card) => {
+          if ("product" in card) {
+            onProductSelect((card as ProductCardData).product);
+          }
+        }}
+        startVisible
+      />
+      <motion.div className="cinematic-cta-row" style={{ opacity: ctaOpacity, y: ctaY }}>
+        <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
+          Request a Quote
+          <ArrowRight size={18} weight="bold" />
+        </button>
+        <button className="secondary-button" type="button" onClick={() => navigate("#/about")}>
+          View Company Details
+          <ArrowRight size={18} weight="bold" />
+        </button>
+      </motion.div>
+    </div>
   );
 }
 
@@ -1535,17 +1618,17 @@ function AboutProfileScene({ progress, navigate }: { progress: MotionValue<numbe
       icon: <CardIcon type="registration" />,
     },
   ];
-  const ctaOpacity = useTransform(progress, [0.2, 0.36, 0.82, 1], [0, 1, 1, 0]);
-  const ctaY = useTransform(progress, [0.2, 0.36, 0.82, 1], [28, 0, 0, -32]);
+  const ctaOpacity = useTransform(progress, [0, 0.82, 1], [1, 1, 0]);
+  const ctaY = useTransform(progress, [0, 0.82, 1], [0, 0, -32]);
 
   return (
     <div className="cinematic-scene card-cinematic-scene page-cinematic-scene">
       <span className="cinematic-label">About Us</span>
-      <AnimatedTitle progress={progress}>A registered Indonesian company for chemical trade brokerage.</AnimatedTitle>
-      <AnimatedParagraph progress={progress}>
+      <AnimatedTitle progress={progress} startVisible>A registered Indonesian company for chemical trade brokerage.</AnimatedTitle>
+      <AnimatedParagraph progress={progress} startVisible>
         The company profile is kept close to the inquiry path so buyers and suppliers can verify the business before opening a commercial discussion.
       </AnimatedParagraph>
-      <AnimatedCards progress={progress} cards={cards} className="legal-cards page-profile-cards" />
+      <AnimatedCards progress={progress} cards={cards} className="legal-cards page-profile-cards" startVisible />
       <motion.div className="cinematic-cta-row" style={{ opacity: ctaOpacity, y: ctaY }}>
         <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
           Contact Us
@@ -1585,14 +1668,14 @@ function AboutLegalScene({ progress, navigate }: { progress: MotionValue<number>
 }
 
 function ContactFormScene({ progress }: { progress: MotionValue<number> }) {
-  const contentOpacity = useTransform(progress, [0, 0.16, 0.84, 1], [0, 1, 1, 0]);
-  const contentY = useTransform(progress, [0, 0.22, 0.84, 1], [72, 0, 0, -64]);
+  const contentOpacity = useTransform(progress, [0, 0.84, 1], [1, 1, 0]);
+  const contentY = useTransform(progress, [0, 0.84, 1], [0, 0, -64]);
 
   return (
     <div className="cinematic-scene contact-cinematic-scene contact-page-scene" id="contact-form">
       <span className="cinematic-label">Contact Us</span>
-      <AnimatedTitle progress={progress}>Send a chemical supply or brokerage inquiry.</AnimatedTitle>
-      <AnimatedParagraph progress={progress}>
+      <AnimatedTitle progress={progress} startVisible>Send a chemical supply or brokerage inquiry.</AnimatedTitle>
+      <AnimatedParagraph progress={progress} startVisible>
         Share the product category, destination, volume range, and documentation needs so the team can start the right commercial discussion.
       </AnimatedParagraph>
       <motion.section className="contact-layout cinematic-contact-layout" style={{ opacity: contentOpacity, y: contentY }}>
