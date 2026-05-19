@@ -1,5 +1,5 @@
 import { CSSProperties, FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { motion, type MotionValue, useScroll, useSpring, useTransform } from "framer-motion";
+import { AnimatePresence, motion, type MotionValue, useScroll, useSpring, useTransform } from "framer-motion";
 import Lenis from "lenis";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -7,14 +7,30 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import {
   ArrowRight,
-  Buildings,
   Check,
-  FileText,
-  List,
-  MapPin,
-  SealCheck,
 } from "@phosphor-icons/react";
+import {
+  BadgeCheck,
+  BriefcaseBusiness,
+  Boxes,
+  FileCheck,
+  FileText as LucideFileText,
+  FlaskConical,
+  Globe2,
+  MapPin as LucideMapPin,
+  Package,
+  PackageCheck,
+  ReceiptText,
+  Truck,
+  UserRound,
+} from "lucide-react";
 import nexusLogo from "./assets/nexus-logo.svg";
+import methanolImage from "./assets/products/methanol-photo.jpeg";
+import cyclohexanoneCyclohexaneImage from "./assets/products/cyclohexanone-cyclohexane-photo.jpeg";
+import ureaCarbamideImage from "./assets/products/urea-carbamide-photo.jpeg";
+import caprolactamImage from "./assets/products/caprolactam-photo.jpeg";
+import ammoniumNitrateImage from "./assets/products/ammonium-nitrate-photo.jpeg";
+import ammoniumSulphateImage from "./assets/products/ammonium-sulphate-photo.jpeg";
 
 type Page = "home" | "products" | "about" | "contact";
 
@@ -27,8 +43,26 @@ type NavItem = {
 type Product = {
   name: string;
   status: string;
+  previewLabel: string;
+  previewValue: string;
   description: string;
+  shortDescription: string;
+  formula?: string;
+  purity?: string;
+  form: string;
+  markets: string[];
+  packing: string;
+  use: string[];
+  transport: string;
+  primaryApplications: string;
+  availableVolume: string;
+  priceIndication: string;
+  safety?: string;
   tags: string[];
+  images: Array<{
+    src: string;
+    alt: string;
+  }>;
 };
 
 const navItems: NavItem[] = [
@@ -41,45 +75,144 @@ const navItems: NavItem[] = [
 const products: Product[] = [
   {
     name: "Methanol",
-    status: "Planned category",
+    status: "Product type",
+    previewLabel: "Formula",
+    previewValue: "CH3OH",
+    shortDescription: "Simple alcohol-based organic chemical used as a base feedstock.",
     description:
-      "Commodity alcohol for industrial supply conversations, subject to grade and documentation confirmation.",
-    tags: ["Industrial solvent", "Bulk inquiry", "Documentation required"],
+      "Simple alcohol-based organic chemical widely used as a base feedstock in chemical production and fuel applications. Clear liquid product suitable for industrial processing and energy use.",
+    formula: "CH3OH",
+    purity: "99.85%",
+    form: "Liquid",
+    markets: ["China", "India", "Southeast Asia"],
+    packing: "Bulk / ISO Tank",
+    use: ["Chemicals", "Fuel Blending"],
+    transport: "Bulk / Tankers",
+    primaryApplications: "Chemical feedstock, fuel blending, industrial processing, and energy-related applications.",
+    availableVolume: "Subject to commercial inquiry and supply confirmation.",
+    priceIndication: "Indicative pricing confirmed by market, origin, volume, and contract terms.",
+    tags: ["Industrial solvent", "Bulk inquiry", "99.85% purity"],
+    images: [
+      { src: methanolImage, alt: "Minimal studio photograph of clear methanol liquid in a glass vial." },
+    ],
   },
   {
-    name: "Cyclohexane",
-    status: "Planned category",
+    name: "Cyclohexanone & Cyclohexane",
+    status: "Product type",
+    previewLabel: "Category",
+    previewValue: "Technical Grade",
+    shortDescription: "Solvent and Nylon-chain intermediates supplied for qualified industrial buyers.",
     description:
-      "Chemical raw material category for qualified buyers and supplier counterparties.",
-    tags: ["Raw material", "Brokerage", "Commercial inquiry"],
+      "Cyclohexanone is a colourless oily liquid used as an industrial solvent and chemical intermediate. Cyclohexane is a clear, highly flammable hydrocarbon solvent and a key intermediate in Nylon production.",
+    formula: "C6H10O / C6H12",
+    form: "Liquid",
+    markets: ["China", "Turkey", "Asia-Pacific"],
+    packing: "Bulk chemical tankers / ISO-tanks",
+    use: ["Nylon intermediates", "Industrial solvents", "Polymer and rubber industries"],
+    transport: "Bulk / Chemical tankers / ISO-tanks",
+    primaryApplications:
+      "Cyclohexanone is used in caprolactam and adipic acid production, and as a solvent for PVC, lacquers, inks, and pesticide formulations. Cyclohexane is used as feedstock for KA-oil production and as a solvent in polymer and rubber industries.",
+    availableVolume: "40,000-60,000 metric tonnes per annum combined.",
+    priceIndication: "USD 900-1,100 per metric tonne (CFR, subject to market conditions and contract terms).",
+    safety: "Classified as dangerous goods Class 3 (flammable liquid). Shipments comply with applicable IMDG and ADR regulations.",
+    tags: ["Technical grade", "Class 3", "Bulk supply"],
+    images: [
+      { src: cyclohexanoneCyclohexaneImage, alt: "Minimal studio photograph of clear cyclohexanone and cyclohexane solvent vials." },
+    ],
   },
   {
-    name: "Urea",
-    status: "Planned category",
+    name: "Urea / Carbamide",
+    status: "Product type",
+    previewLabel: "Nitrogen",
+    previewValue: "46% N",
+    shortDescription: "White crystalline nitrogen fertilizer and chemical synthesis feedstock.",
     description:
-      "Fertilizer commodity category for international trading and sourcing discussions.",
-    tags: ["Fertilizer", "Agriculture", "Supply inquiry"],
+      "Urea is a white crystalline solid with the highest nitrogen content among solid nitrogenous fertilisers. It is also widely used as a feedstock in chemical synthesis.",
+    formula: "CH4N2O",
+    form: "Prilled or granular solid",
+    markets: ["Turkey", "Brazil", "Peru", "UAE", "India"],
+    packing: "Bulk carrier / 50 kg bags / 1,000 kg big-bags",
+    use: ["Nitrogen fertilizer", "Urea-formaldehyde resins", "Melamine", "AdBlue / DEF", "Animal feed supplements"],
+    transport: "Bulk carrier / Bagged cargo",
+    primaryApplications:
+      "Agricultural nitrogen fertilizer for direct application, plus industrial use in resins, melamine, AdBlue (DEF), and animal feed supplements.",
+    availableVolume: "200,000-400,000 metric tonnes per annum.",
+    priceIndication: "USD 380-430 per metric tonne (FOB/CFR, subject to market conditions and contract terms).",
+    tags: ["Fertilizer", "46% N", "Bulk or bagged"],
+    images: [
+      { src: ureaCarbamideImage, alt: "Minimal studio photograph of white urea crystalline granules in a dish." },
+    ],
   },
   {
     name: "Caprolactam",
-    status: "Planned category",
+    status: "Product type",
+    previewLabel: "Formula",
+    previewValue: "C6H11NO",
+    shortDescription: "Key monomer for Nylon-6 fibres, filaments, and engineering plastics.",
     description:
-      "Intermediate chemical category for product availability and grade-specific discussions.",
-    tags: ["Intermediate", "Industrial", "Grade pending"],
+      "Caprolactam is a cyclic amide and the key monomer in the production of Nylon-6 (Polyamide-6). It appears as white flakes or a colourless liquid when melted.",
+    formula: "C6H11NO",
+    form: "Molten liquid or solid flakes",
+    markets: ["China", "Turkey", "India", "Southeast Asia"],
+    packing: "Molten bulk / heated ISO-tanks / rail tankers / 1,000 kg big-bags",
+    use: ["Nylon-6 fibres", "Engineering plastics", "Textile yarn", "Tyre cord", "Injection moulding"],
+    transport: "Bulk heated tanks / ISO-tanks / rail tankers / big-bags",
+    primaryApplications:
+      "Production of Nylon-6 fibres, filaments, and engineering plastics for textile yarn, carpet fibre, tyre cord, fishing nets, rope, monofilament, automotive, and industrial components.",
+    availableVolume: "80,000-100,000 metric tonnes per annum.",
+    priceIndication: "USD 1,300-1,500 per metric tonne (CFR, subject to market conditions and contract terms).",
+    tags: ["Nylon-6", "Intermediate", "Bulk or flakes"],
+    images: [
+      { src: caprolactamImage, alt: "Minimal studio photograph of white caprolactam flakes on a light surface." },
+    ],
   },
   {
-    name: "Fertilizers",
-    status: "Planned category",
+    name: "Ammonium Nitrate",
+    status: "Product type",
+    previewLabel: "Nitrogen",
+    previewValue: "34% N",
+    shortDescription: "Effective nitrogen fertilizer and technical-grade industrial component.",
     description:
-      "Selected fertilizer commodities handled through trading and brokerage channels.",
-    tags: ["Commodity", "Procurement", "Trade desk"],
+      "Ammonium nitrate is a white crystalline solid containing nitrogen in both ammonium and nitrate form, making it one of the most effective nitrogen fertilisers for agricultural use.",
+    formula: "NH4NO3",
+    form: "Granular or prilled solid",
+    markets: ["Brazil", "Turkey", "UAE"],
+    packing: "Bulk / 50 kg bags / 1,000 kg big-bags",
+    use: ["Nitrogen fertilizer", "Cereals", "Oilseeds", "Pasture", "Technical grade explosives"],
+    transport: "Bulk or bagged dangerous goods cargo",
+    primaryApplications:
+      "Agricultural straight nitrogen fertilizer, particularly effective for cereals, oilseeds, and pasture. Technical grade material is also used in ANFO for mining and construction sectors.",
+    availableVolume: "150,000-200,000 metric tonnes per annum.",
+    priceIndication: "USD 350-420 per metric tonne (FOB/CFR, subject to market conditions and contract terms).",
+    safety: "Classified as dangerous goods Class 5.1 (oxidising substance). Shipments comply with applicable IMDG and national transport regulations.",
+    tags: ["Fertilizer", "Class 5.1", "34% N"],
+    images: [
+      { src: ammoniumNitrateImage, alt: "Minimal studio photograph of white ammonium nitrate prills in a shallow tray." },
+    ],
   },
   {
-    name: "Basic Chemical Commodities",
-    status: "Planned category",
+    name: "Ammonium Sulphate",
+    status: "Product type",
+    previewLabel: "N / S",
+    previewValue: "21% / 24%",
+    shortDescription: "Nitrogen-sulphur fertilizer for sulphur-deficient agricultural soils.",
     description:
-      "Additional chemical raw materials to be listed as the commercial portfolio is finalized.",
-    tags: ["Raw materials", "Flexible scope", "B2B supply"],
+      "Ammonium sulphate is a white crystalline salt containing 21% nitrogen and 24% sulphur, addressing both nitrogen and sulphur deficiencies in soil.",
+    formula: "(NH4)2SO4",
+    form: "Crystalline or compacted granular solid",
+    markets: ["Brazil", "Colombia", "Mexico", "Turkey", "Asia-Pacific"],
+    packing: "Bulk carrier / 50 kg bags / 1,000 kg big-bags",
+    use: ["Nitrogen-sulphur fertilizer", "Food additive E517", "Ammonium salts", "Flame retardants", "Water treatment"],
+    transport: "Bulk or bagged non-hazardous cargo",
+    primaryApplications:
+      "Agricultural nitrogen-sulphur fertilizer for sulphur-deficient soils, cereals, oilseeds, sugar cane, and tea plantations. Also used in food and industrial applications.",
+    availableVolume: "50,000-80,000 metric tonnes per annum.",
+    priceIndication: "USD 130-150 per metric tonne (FOB/CFR, subject to market conditions and contract terms).",
+    safety: "Non-hazardous cargo with no special transport restrictions.",
+    tags: ["Fertilizer", "Non-hazardous", "N/S supply"],
+    images: [
+      { src: ammoniumSulphateImage, alt: "Minimal studio photograph of ammonium sulphate crystals in a dish." },
+    ],
   },
 ];
 
@@ -108,6 +241,7 @@ function getCurrentPage(): Page {
 
 function App() {
   const [page, setPage] = useState<Page>(getCurrentPage);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     const handlePop = () => setPage(getCurrentPage());
@@ -139,12 +273,13 @@ function App() {
       <SharedHelixBackground />
       <ConceptTopbar navigate={navigate} />
       <main className="home-main">
-        {page === "home" && <HomePage navigate={navigate} />}
+        {page === "home" && <HomePage navigate={navigate} onProductSelect={setSelectedProduct} />}
         {page === "products" && <ProductsPage navigate={navigate} />}
         {page === "about" && <AboutPage navigate={navigate} />}
         {page === "contact" && <ContactPage />}
       </main>
       <Footer navigate={navigate} />
+      <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
     </>
   );
 }
@@ -295,16 +430,77 @@ type AnimatedCardData = {
   icon?: ReactNode;
 };
 
-function HomePage({ navigate }: { navigate: (path: string, scrollTargetId?: string) => void }) {
+type ProductCardData = AnimatedCardData & {
+  product: Product;
+};
+
+type CardIconType =
+  | "company"
+  | "registration"
+  | "tax"
+  | "director"
+  | "address"
+  | "business"
+  | "product"
+  | "formula"
+  | "markets"
+  | "packing"
+  | "transport"
+  | "check";
+
+function CardIcon({ type }: { type: CardIconType }) {
+  const iconProps = {
+    className: "card-icon",
+    "aria-hidden": true,
+    focusable: false,
+    strokeWidth: 1.6,
+  } as const;
+
+  switch (type) {
+    case "company":
+      return <LucideFileText {...iconProps} />;
+    case "registration":
+      return <FileCheck {...iconProps} />;
+    case "tax":
+      return <ReceiptText {...iconProps} />;
+    case "director":
+      return <UserRound {...iconProps} />;
+    case "address":
+      return <LucideMapPin {...iconProps} />;
+    case "business":
+      return <BriefcaseBusiness {...iconProps} />;
+    case "product":
+      return <Package {...iconProps} />;
+    case "formula":
+      return <FlaskConical {...iconProps} />;
+    case "markets":
+      return <Globe2 {...iconProps} />;
+    case "packing":
+      return <Boxes {...iconProps} />;
+    case "transport":
+      return <Truck {...iconProps} />;
+    case "check":
+      return <BadgeCheck {...iconProps} />;
+    default:
+      return <PackageCheck {...iconProps} />;
+  }
+}
+
+function getLegalCardIconType(label: string): CardIconType {
+  if (label.includes("Registration") || label.includes("NIB")) return "registration";
+  if (label.includes("Tax") || label.includes("NPWP")) return "tax";
+  if (label.includes("Director")) return "director";
+  if (label.includes("Address")) return "address";
+  if (label.includes("KBLI")) return "business";
+  return "company";
+}
+
+function HomePage({ navigate, onProductSelect }: { navigate: (path: string, scrollTargetId?: string) => void; onProductSelect: (product: Product) => void }) {
   return (
     <PageShell>
       <div className="home-cinematic">
         <ScrollSection className="hero-scroll-stage" height="200vh">
-          {({ progress }) => <HeroProductsScene progress={progress} />}
-        </ScrollSection>
-
-        <ScrollSection className="product-focus-scene" label="02" title="Products" height="175vh">
-          {({ progress }) => <ProductFocusScene progress={progress} navigate={navigate} />}
+          {({ progress }) => <HeroProductsScene progress={progress} onProductSelect={onProductSelect} />}
         </ScrollSection>
 
         <ScrollSection className="trading-scope-scene" label="03" title="Trading scope" height="185vh">
@@ -384,140 +580,84 @@ function AnimatedParagraph({ progress, children, className = "" }: { progress: M
   );
 }
 
-function AnimatedCards({ progress, cards, className = "" }: { progress: MotionValue<number>; cards: AnimatedCardData[]; className?: string }) {
+function AnimatedCards({
+  progress,
+  cards,
+  className = "",
+  onCardClick,
+}: {
+  progress: MotionValue<number>;
+  cards: AnimatedCardData[];
+  className?: string;
+  onCardClick?: (card: AnimatedCardData, index: number) => void;
+}) {
   const opacity = useTransform(progress, [0, 0.16, 0.9, 1], [0, 1, 1, 0]);
   const y = useTransform(progress, [0, 0.22, 0.86, 1], [70, 0, 0, 24]);
-  const trackRef = useRef<HTMLDivElement | null>(null);
-  const viewportRef = useRef<HTMLDivElement | null>(null);
-  const scrollFrameRef = useRef<number | null>(null);
-  const settleTimerRef = useRef<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isCarouselMode, setIsCarouselMode] = useState(false);
-  const cloneCount = Math.min(3, cards.length);
-  const carouselCards = [
-    ...cards.slice(Math.max(cards.length - cloneCount, 0)).map((card) => ({ ...card, cloneKey: "head" })),
-    ...cards.map((card) => ({ ...card, cloneKey: "real" })),
-    ...cards.slice(0, cloneCount).map((card) => ({ ...card, cloneKey: "tail" })),
-  ];
 
-  const alignVisualCard = (visualIndex: number, behavior: ScrollBehavior = "smooth") => {
-    const track = trackRef.current;
-    const viewport = viewportRef.current;
-    if (!track) return;
-
-    const slides = Array.from(track.querySelectorAll<HTMLElement>(".carousel-slide"));
-    const nextCard = slides[visualIndex];
-    if (!nextCard) return;
-
-    const viewportWidth = viewport?.clientWidth ?? track.clientWidth;
-    const targetLeft = nextCard.offsetLeft - Math.max((viewportWidth - nextCard.offsetWidth) / 2, 0);
-    track.scrollTo({
-      left: Math.max(targetLeft, 0),
-      behavior,
-    });
+  const loopIndex = (index: number) => {
+    if (cards.length === 0) return 0;
+    return ((index % cards.length) + cards.length) % cards.length;
   };
 
-  const scrollToCard = (index: number) => {
-    if (cards.length === 0) return;
+  const goToCard = (index: number) => {
+    setActiveIndex(loopIndex(index));
+  };
 
-    const lastIndex = cards.length - 1;
-    const movingForwardFromEnd = activeIndex === lastIndex && index > lastIndex;
-    const movingBackwardFromStart = activeIndex === 0 && index < 0;
-    const nextIndex = ((index % cards.length) + cards.length) % cards.length;
+  const moveCarousel = (direction: number) => {
+    setActiveIndex((current) => loopIndex(current + direction));
+  };
 
-    setActiveIndex(nextIndex);
-
-    if (movingForwardFromEnd) {
-      alignVisualCard(cloneCount + cards.length, "smooth");
-      window.setTimeout(() => alignVisualCard(cloneCount, "auto"), 460);
-      return;
+  const getSignedOffset = (index: number) => {
+    if (cards.length === 0) return 0;
+    let offset = (index - activeIndex + cards.length) % cards.length;
+    if (offset > cards.length / 2) {
+      offset -= cards.length;
     }
-
-    if (movingBackwardFromStart) {
-      alignVisualCard(cloneCount - 1, "smooth");
-      window.setTimeout(() => alignVisualCard(cloneCount + lastIndex, "auto"), 460);
-      return;
-    }
-
-    alignVisualCard(cloneCount + nextIndex, "smooth");
+    return offset;
   };
-
-  const handleTrackScroll = () => {
-    const track = trackRef.current;
-    if (!track) return;
-    if (scrollFrameRef.current !== null) return;
-
-    scrollFrameRef.current = window.requestAnimationFrame(() => {
-      scrollFrameRef.current = null;
-      const currentTrack = trackRef.current;
-      if (!currentTrack) return;
-
-      const slides = Array.from(currentTrack.querySelectorAll<HTMLElement>(".carousel-slide"));
-      if (slides.length === 0) return;
-
-      const trackCenter = currentTrack.scrollLeft + currentTrack.clientWidth / 2;
-      const closestIndex = slides.reduce((closest, card, index) => {
-        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
-        const closestCard = slides[closest];
-        const closestCenter = closestCard.offsetLeft + closestCard.offsetWidth / 2;
-        return Math.abs(cardCenter - trackCenter) < Math.abs(closestCenter - trackCenter) ? index : closest;
-      }, 0);
-
-      const logicalIndex = ((closestIndex - cloneCount) % cards.length + cards.length) % cards.length;
-      setActiveIndex((current) => (current === logicalIndex ? current : logicalIndex));
-
-      if (settleTimerRef.current !== null) {
-        window.clearTimeout(settleTimerRef.current);
-      }
-
-      settleTimerRef.current = window.setTimeout(() => {
-        const visualIndex = closestIndex;
-        if (visualIndex < cloneCount) {
-          alignVisualCard(cloneCount + logicalIndex, "auto");
-        } else if (visualIndex >= cloneCount + cards.length) {
-          alignVisualCard(cloneCount + logicalIndex, "auto");
-        }
-      }, 140);
-    });
-  };
-
-  useEffect(() => {
-    const media = window.matchMedia("(max-height: 1300px), (max-width: 900px)");
-    const update = () => setIsCarouselMode(media.matches);
-
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
 
   useEffect(() => {
     setActiveIndex(0);
-    if (isCarouselMode) {
-      window.requestAnimationFrame(() => alignVisualCard(cloneCount, "auto"));
-    } else {
-      trackRef.current?.scrollTo({ left: 0 });
-    }
-  }, [cards.length, cloneCount, isCarouselMode]);
+  }, [cards.length]);
 
-  useEffect(() => {
-    return () => {
-      if (scrollFrameRef.current !== null) {
-        window.cancelAnimationFrame(scrollFrameRef.current);
-      }
-      if (settleTimerRef.current !== null) {
-        window.clearTimeout(settleTimerRef.current);
-      }
-    };
-  }, []);
+  const renderCardContent = (card: AnimatedCardData) => {
+    const productCard = "product" in card ? (card as ProductCardData) : null;
+
+    if (productCard) {
+      return (
+        <div className="product-preview-card-content">
+          <div className="product-preview-card-header">
+            <strong>{productCard.product.name}</strong>
+            <span>{productCard.product.previewLabel}</span>
+          </div>
+          <div className="product-preview-media">
+            <img src={productCard.product.images[0].src} alt={productCard.product.images[0].alt} loading="lazy" />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {card.icon && <div className="card-icon-wrapper">{card.icon}</div>}
+        <span>{card.label}</span>
+        <strong>{card.title}</strong>
+        <p>{card.text}</p>
+      </>
+    );
+  };
 
   const renderCard = (card: AnimatedCardData, index: number, key: string) => (
     <div className="carousel-slide" key={key}>
       <div className="card-shadow-wrapper">
-        <AnimatedCard index={index}>
-          {card.icon && <div className="animated-card__icon">{card.icon}</div>}
-          <span>{card.label}</span>
-          <strong>{card.title}</strong>
-          <p>{card.text}</p>
+        <AnimatedCard
+          index={index}
+          className={"product" in card ? "product-preview-card" : ""}
+          onClick={onCardClick ? () => onCardClick(card, index) : undefined}
+          ariaLabel={onCardClick ? `Open details for ${card.title}` : undefined}
+        >
+          {renderCardContent(card)}
         </AnimatedCard>
       </div>
     </div>
@@ -530,40 +670,77 @@ function AnimatedCards({ progress, cards, className = "" }: { progress: MotionVa
       </div>
 
       <div className="animated-cards-carousel">
-        <button className="carousel-side-arrow carousel-side-arrow-left" type="button" aria-label="Previous card" onClick={() => scrollToCard(activeIndex - 1)}>
-          {"<"}
-        </button>
-        <div className="animated-cards-viewport" ref={viewportRef}>
-          <div className="animated-cards-track" ref={trackRef} onScroll={handleTrackScroll}>
-            {carouselCards.map((card, index) => {
-              const logicalIndex = ((index - cloneCount) % cards.length + cards.length) % cards.length;
-              const distance = Math.min(Math.abs(logicalIndex - activeIndex), cards.length - Math.abs(logicalIndex - activeIndex));
+        {cards.length > 1 && (
+          <button className="carousel-side-arrow carousel-side-arrow-left" type="button" aria-label="Previous card" onClick={() => moveCarousel(-1)}>
+            {"‹"}
+          </button>
+        )}
+
+        <div className="animated-cards-viewport">
+          <motion.div
+            className="animated-cards-track"
+            drag={cards.length > 1 ? "x" : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.08}
+            onDragEnd={(_, info) => {
+              if (info.offset.x < -42 || info.velocity.x < -260) {
+                moveCarousel(1);
+              }
+              if (info.offset.x > 42 || info.velocity.x > 260) {
+                moveCarousel(-1);
+              }
+            }}
+          >
+            {cards.map((card, index) => {
+              const signedOffset = getSignedOffset(index);
+              const distance = Math.abs(signedOffset);
+              const side = signedOffset === 0 ? "center" : signedOffset < 0 ? "left" : "right";
+              const visibleDistance = Math.min(distance, 3);
+              const isEdgePeek = distance === 2;
+              const isVisible = distance <= 2;
               return (
-                <div className="carousel-slide" data-distance={Math.min(distance, 2)} key={`carousel-${card.cloneKey}-${index}-${card.title}`}>
+                <motion.div
+                  className="carousel-slide"
+                  data-distance={visibleDistance}
+                  data-side={side}
+                  key={`carousel-${card.title}`}
+                  initial={false}
+                  animate={{
+                    x: `${signedOffset * 108 - 50}%`,
+                    opacity: isVisible ? (isEdgePeek ? 0.34 : 1) : 0,
+                    scale: isEdgePeek ? 0.965 : 1,
+                    filter: isEdgePeek ? "blur(1.4px)" : "blur(0px)",
+                  }}
+                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                  style={{
+                    zIndex: 10 - Math.min(distance, 9),
+                    pointerEvents: distance <= 1 ? "auto" : "none",
+                  }}
+                >
                   <div className="card-shadow-wrapper">
-                    <AnimatedCard index={logicalIndex}>
-                      {card.icon && <div className="animated-card__icon">{card.icon}</div>}
-                      <span>{card.label}</span>
-                      <strong>{card.title}</strong>
-                      <p>{card.text}</p>
+                    <AnimatedCard
+                      index={index}
+                      className={"product" in card ? "product-preview-card" : ""}
+                      onClick={onCardClick ? () => onCardClick(card, index) : undefined}
+                      ariaLabel={onCardClick ? `Open details for ${card.title}` : undefined}
+                    >
+                      {renderCardContent(card)}
                     </AnimatedCard>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         </div>
-        <button className="carousel-side-arrow carousel-side-arrow-right" type="button" aria-label="Next card" onClick={() => scrollToCard(activeIndex + 1)}>
-          {">"}
-        </button>
+
+        {cards.length > 1 && (
+          <button className="carousel-side-arrow carousel-side-arrow-right" type="button" aria-label="Next card" onClick={() => moveCarousel(1)}>
+            {"›"}
+          </button>
+        )}
+
         {cards.length > 1 && (
           <div className="carousel-controls" aria-label="Card carousel controls">
-            <button className="carousel-arrow" type="button" aria-label="Previous card" onClick={() => scrollToCard(activeIndex - 1)}>
-              {"<"}
-            </button>
-            <button className="carousel-arrow" type="button" aria-label="Next card" onClick={() => scrollToCard(activeIndex + 1)}>
-              {">"}
-            </button>
             <div className="carousel-dots">
               {cards.map((card, index) => (
                 <button
@@ -571,21 +748,16 @@ function AnimatedCards({ progress, cards, className = "" }: { progress: MotionVa
                   key={card.title}
                   type="button"
                   aria-label={`Go to card ${index + 1}`}
-                  onClick={() => scrollToCard(index)}
+                  onClick={() => goToCard(index)}
                 />
               ))}
             </div>
           </div>
         )}
       </div>
+
       {cards.length > 1 && (
         <div className="carousel-controls animated-cards-grid-controls" aria-label="Card carousel controls">
-          <button className="carousel-arrow" type="button" aria-label="Previous card" onClick={() => scrollToCard(activeIndex - 1)}>
-            {"<"}
-          </button>
-          <button className="carousel-arrow" type="button" aria-label="Next card" onClick={() => scrollToCard(activeIndex + 1)}>
-            {">"}
-          </button>
           <div className="carousel-dots">
             {cards.map((card, index) => (
               <button
@@ -593,7 +765,7 @@ function AnimatedCards({ progress, cards, className = "" }: { progress: MotionVa
                 key={card.title}
                 type="button"
                 aria-label={`Go to card ${index + 1}`}
-                onClick={() => scrollToCard(index)}
+                onClick={() => goToCard(index)}
               />
             ))}
           </div>
@@ -603,10 +775,33 @@ function AnimatedCards({ progress, cards, className = "" }: { progress: MotionVa
   );
 }
 
-function AnimatedCard({ index, children }: { index: number; children: ReactNode }) {
+function AnimatedCard({
+  index,
+  children,
+  onClick,
+  ariaLabel,
+  className = "",
+}: {
+  index: number;
+  children: ReactNode;
+  onClick?: () => void;
+  ariaLabel?: string;
+  className?: string;
+}) {
   return (
     <motion.div
-      className="animated-card info-card"
+      className={`animated-card info-card ${className} ${onClick ? "is-clickable" : ""}`.trim()}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={ariaLabel}
+      onClick={onClick}
+      onKeyDown={(event) => {
+        if (!onClick) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick();
+        }
+      }}
       initial={{ opacity: 0, y: 40, filter: "blur(8px)" }}
       whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
       whileHover={{
@@ -614,11 +809,147 @@ function AnimatedCard({ index, children }: { index: number; children: ReactNode 
         scale: 1.015,
         transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
       }}
+      whileTap={onClick ? { scale: 0.992 } : undefined}
       viewport={{ once: true, amount: 0.25 }}
       transition={{ duration: 0.52, delay: index * 0.075, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
     </motion.div>
+  );
+}
+
+function ProductDetailModal({ product, onClose }: { product: Product | null; onClose: () => void }) {
+  useEffect(() => {
+    if (!product) return undefined;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    const previousPosition = document.body.style.position;
+    const previousTop = document.body.style.top;
+    const previousWidth = document.body.style.width;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const scrollY = window.scrollY;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
+    document.documentElement.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.position = previousPosition;
+      document.body.style.top = previousTop;
+      document.body.style.width = previousWidth;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      window.scrollTo({ top: scrollY, behavior: "instant" });
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [product, onClose]);
+
+  const detailRows = product
+    ? [
+        ["Primary applications", product.primaryApplications],
+        ["Available volume", product.availableVolume],
+        ["Price indication", product.priceIndication],
+        ["Key markets", product.markets.join(", ")],
+        ["Packing & form", `${product.packing}. Form: ${product.form}.`],
+        ["Transport / safety", product.safety ? `${product.transport}. ${product.safety}` : product.transport],
+      ]
+    : [];
+
+  return (
+    <AnimatePresence>
+      {product && (
+        <motion.div
+          className="product-detail-overlay"
+          role="presentation"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              onClose();
+            }
+          }}
+        >
+          <motion.article
+            className="product-detail-panel product-detail-scroll info-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="product-detail-title"
+            initial={{ opacity: 0, scale: 0.96, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 20 }}
+            transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+            onMouseDown={(event) => event.stopPropagation()}
+            onWheel={(event) => event.stopPropagation()}
+            onTouchMove={(event) => event.stopPropagation()}
+          >
+            <button className="product-detail-close" type="button" aria-label="Close product details" onClick={onClose}>
+              ×
+            </button>
+
+            <div className="product-detail-header">
+              <span>{product.previewLabel}</span>
+              <h2 id="product-detail-title">{product.name}</h2>
+              <p>{product.description}</p>
+            </div>
+
+            <figure className="product-detail-image">
+              <img src={product.images[0].src} alt={product.images[0].alt} loading="lazy" />
+            </figure>
+
+            <div className="product-detail-meta" aria-label="Product summary">
+              {product.form && (
+                <div>
+                  <span>Form</span>
+                  <strong>{product.form}</strong>
+                </div>
+              )}
+              {product.purity && (
+                <div>
+                  <span>Purity</span>
+                  <strong>{product.purity}</strong>
+                </div>
+              )}
+              {product.formula && (
+                <div>
+                  <span>Formula</span>
+                  <strong>{product.formula}</strong>
+                </div>
+              )}
+              <div>
+                <span>Markets</span>
+                <strong>{product.markets.slice(0, 3).join(" / ")}</strong>
+              </div>
+            </div>
+
+            <div className="product-detail-grid">
+              {detailRows.map(([label, value]) => (
+                <section className="product-detail-section" key={label}>
+                  <span>{label}</span>
+                  <p>{value}</p>
+                </section>
+              ))}
+            </div>
+
+            <div className="product-detail-tags">
+              {product.tags.map((tag) => (
+                <span key={tag}>{tag}</span>
+              ))}
+            </div>
+          </motion.article>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -728,7 +1059,8 @@ function ConceptTopbar({ navigate }: { navigate: (path: string, scrollTargetId?:
   );
 }
 
-function HeroProductsScene({ progress }: { progress: MotionValue<number> }) {
+function HeroProductsScene({ progress, onProductSelect }: { progress: MotionValue<number>; onProductSelect: (product: Product) => void }) {
+  const featuredProduct = products.find((product) => product.name === "Caprolactam") ?? products[0];
   const chemX = useTransform(progress, [0, 0.82], ["0vw", "-64vw"]);
   const bridgeX = useTransform(progress, [0, 0.82], ["0vw", "64vw"]);
   const wordOpacity = useTransform(progress, [0, 0.62], [1, 0]);
@@ -769,14 +1101,23 @@ function HeroProductsScene({ progress }: { progress: MotionValue<number> }) {
       <motion.div
         className="concept-card"
         aria-label="Featured product"
+        role="button"
+        tabIndex={0}
         style={{ x: cardX, y: cardY, scale: cardScale }}
+        onClick={() => onProductSelect(featuredProduct)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onProductSelect(featuredProduct);
+          }
+        }}
       >
         <div>
-          <strong>Caprolactam</strong>
-          <span>Formula</span>
+          <strong>{featuredProduct.name}</strong>
+          <span>{featuredProduct.previewLabel}</span>
         </div>
         <div className="concept-formula-box">
-          <span>C6H11NO</span>
+          <img src={featuredProduct.images[0].src} alt={featuredProduct.images[0].alt} loading="eager" />
         </div>
         <div className="concept-card-nav" aria-hidden="true">
           <span>{"<"}</span>
@@ -787,33 +1128,6 @@ function HeroProductsScene({ progress }: { progress: MotionValue<number> }) {
           <i />
           <i />
         </div>
-      </motion.div>
-    </div>
-  );
-}
-
-function ProductFocusScene({ progress, navigate }: { progress: MotionValue<number>; navigate: (path: string, scrollTargetId?: string) => void }) {
-  const cards: AnimatedCardData[] = products.map((product) => ({
-    label: product.status,
-    title: product.name,
-    text: product.description,
-  }));
-  const buttonOpacity = useTransform(progress, [0.28, 0.48, 0.84, 1], [0, 1, 1, 0]);
-  const buttonY = useTransform(progress, [0.28, 0.52, 0.86, 1], [48, 0, 0, -44]);
-
-  return (
-    <div className="cinematic-scene product-focus-cinematic-scene">
-      <span className="cinematic-label">02</span>
-      <AnimatedTitle progress={progress}>Six starting categories for qualified chemical inquiries.</AnimatedTitle>
-      <AnimatedParagraph progress={progress}>
-        Product names, grade, origin, packaging, availability, and documentation are confirmed through direct commercial inquiry.
-      </AnimatedParagraph>
-      <AnimatedCards progress={progress} cards={cards} className="product-category-cards" />
-      <motion.div className="cinematic-cta-row compact" style={{ opacity: buttonOpacity, y: buttonY }}>
-        <button className="line-button" type="button" onClick={() => navigate("#/products")}>
-          View Product Categories
-          <ArrowRight size={18} weight="bold" />
-        </button>
       </motion.div>
     </div>
   );
@@ -862,25 +1176,25 @@ function BusinessActivitiesScene({ progress }: { progress: MotionValue<number> }
       label: "KBLI 46100",
       title: "Wholesale trade on a fee or contract basis",
       text: "Commercial brokerage activity for qualified B2B trading relationships.",
-      icon: <FileText size={20} weight="duotone" />,
+      icon: <CardIcon type="business" />,
     },
     {
       label: "KBLI 46651",
       title: "Wholesale of chemical products",
       text: "Industrial chemical product trading, including basic chemical commodities.",
-      icon: <SealCheck size={20} weight="duotone" />,
+      icon: <CardIcon type="product" />,
     },
     {
       label: "License",
       title: "NIB 1603260067144",
       text: "Business identification serving as the main company license.",
-      icon: <Check size={20} weight="bold" />,
+      icon: <CardIcon type="registration" />,
     },
     {
       label: "Address",
       title: "Denpasar, Bali",
       text: "Legal address at Jalan Ratna No. 80, Tonja, Denpasar Utara.",
-      icon: <MapPin size={20} weight="duotone" />,
+      icon: <CardIcon type="address" />,
     },
   ];
 
@@ -1123,9 +1437,6 @@ function ProductsPage({ navigate }: { navigate: (path: string, scrollTargetId?: 
   return (
     <PageShell>
       <div className="home-cinematic page-cinematic products-page-cinematic">
-        <ScrollSection className="products-catalog-scene" height="190vh">
-          {({ progress }) => <ProductsCatalogScene progress={progress} navigate={navigate} />}
-        </ScrollSection>
         <ScrollSection className="products-inquiry-scene" height="170vh">
           {({ progress }) => <ProductsInquiryScene progress={progress} navigate={navigate} />}
         </ScrollSection>
@@ -1161,57 +1472,25 @@ function ContactPage() {
   );
 }
 
-function ProductsCatalogScene({ progress, navigate }: { progress: MotionValue<number>; navigate: (path: string, scrollTargetId?: string) => void }) {
-  const ctaOpacity = useTransform(progress, [0.18, 0.34, 0.82, 1], [0, 1, 1, 0]);
-  const ctaY = useTransform(progress, [0.18, 0.34, 0.82, 1], [28, 0, 0, -32]);
-  const productCards = products.map((product) => ({
-    label: product.status,
-    title: product.name,
-    text: product.description,
-    icon: <List size={22} weight="duotone" />,
-  }));
-
-  return (
-    <div className="cinematic-scene card-cinematic-scene page-cinematic-scene">
-      <span className="cinematic-label">Products</span>
-      <AnimatedTitle progress={progress}>Six starting categories for qualified chemical inquiries.</AnimatedTitle>
-      <AnimatedParagraph progress={progress}>
-        Product names, grade, origin, packaging, availability, and documentation are confirmed through direct commercial inquiry.
-      </AnimatedParagraph>
-      <AnimatedCards progress={progress} cards={productCards} className="product-category-cards page-product-cards" />
-      <motion.div className="cinematic-cta-row" style={{ opacity: ctaOpacity, y: ctaY }}>
-        <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
-          Request a Quote
-          <ArrowRight size={18} weight="bold" />
-        </button>
-        <button className="secondary-button" type="button" onClick={() => navigate("#/about")}>
-          View Company Details
-          <ArrowRight size={18} weight="bold" />
-        </button>
-      </motion.div>
-    </div>
-  );
-}
-
 function ProductsInquiryScene({ progress, navigate }: { progress: MotionValue<number>; navigate: (path: string, scrollTargetId?: string) => void }) {
   const cards: AnimatedCardData[] = [
     {
       label: "01",
       title: "Product basics",
       text: "Share category, grade target, volume range, and destination before pricing or documentation discussions begin.",
-      icon: <FileText size={22} weight="duotone" />,
+      icon: <CardIcon type="formula" />,
     },
     {
       label: "02",
       title: "Commercial fit",
       text: "The team evaluates counterparties, documentation needs, packaging, and practical trading path.",
-      icon: <SealCheck size={22} weight="duotone" />,
+      icon: <CardIcon type="check" />,
     },
     {
       label: "03",
       title: "Supply discussion",
       text: "Qualified conversations move toward available terms, origin, timing, and next documentation steps.",
-      icon: <ArrowRight size={22} weight="duotone" />,
+      icon: <CardIcon type="transport" />,
     },
   ];
   const ctaOpacity = useTransform(progress, [0.2, 0.36, 0.82, 1], [0, 1, 1, 0]);
@@ -1241,19 +1520,19 @@ function AboutProfileScene({ progress, navigate }: { progress: MotionValue<numbe
       label: "Legal name",
       title: "PT NEXUS CHEM BRIDGE",
       text: "Indonesia-registered chemical trading and brokerage company.",
-      icon: <Buildings size={22} weight="duotone" />,
+      icon: <CardIcon type="company" />,
     },
     {
       label: "Business scope",
       title: "International brokerage",
       text: "Industrial chemicals, fertilizers, and related basic chemical commodities.",
-      icon: <List size={22} weight="duotone" />,
+      icon: <CardIcon type="business" />,
     },
     {
       label: "Main license",
       title: "NIB 1603260067144",
       text: "Business identification number serving as the primary company license.",
-      icon: <SealCheck size={22} weight="duotone" />,
+      icon: <CardIcon type="registration" />,
     },
   ];
   const ctaOpacity = useTransform(progress, [0.2, 0.36, 0.82, 1], [0, 1, 1, 0]);
@@ -1282,7 +1561,7 @@ function AboutLegalScene({ progress, navigate }: { progress: MotionValue<number>
     label,
     title: value,
     text: label.includes("KBLI") ? "Registered business activity for wholesale and chemical product trade." : "Company verification detail for commercial counterparties.",
-    icon: label.includes("Address") ? <MapPin size={22} weight="duotone" /> : <FileText size={22} weight="duotone" />,
+    icon: <CardIcon type={getLegalCardIconType(label)} />,
   }));
   const ctaOpacity = useTransform(progress, [0.2, 0.36, 0.82, 1], [0, 1, 1, 0]);
   const ctaY = useTransform(progress, [0.2, 0.36, 0.82, 1], [28, 0, 0, -32]);
