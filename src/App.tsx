@@ -226,6 +226,10 @@ const legalRows = [
   ["KBLI 46651", "Wholesale of chemical products, including industrial chemicals"],
 ];
 
+function getProductSubtitle(product: Product) {
+  return product.formula ?? product.previewValue;
+}
+
 function getCurrentPage(): Page {
   const hashRoute = window.location.hash.replace(/^#\/?/, "").split(/[?#]/)[0];
   if (hashRoute.startsWith("products")) return "products";
@@ -606,16 +610,18 @@ function AnimatedCards({
   className = "",
   onCardClick,
   startVisible = false,
+  initialIndex = 0,
 }: {
   progress: MotionValue<number>;
   cards: AnimatedCardData[];
   className?: string;
   onCardClick?: (card: AnimatedCardData, index: number) => void;
   startVisible?: boolean;
+  initialIndex?: number;
 }) {
   const opacity = useTransform(progress, startVisible ? [0, 0.9, 1] : [0, 0.16, 0.9, 1], startVisible ? [1, 1, 0] : [0, 1, 1, 0]);
   const y = useTransform(progress, startVisible ? [0, 0.86, 1] : [0, 0.22, 0.86, 1], startVisible ? [0, 0, 24] : [70, 0, 0, 24]);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
 
   const loopIndex = (index: number) => {
     if (cards.length === 0) return 0;
@@ -640,8 +646,8 @@ function AnimatedCards({
   };
 
   useEffect(() => {
-    setActiveIndex(0);
-  }, [cards.length]);
+    setActiveIndex(loopIndex(initialIndex));
+  }, [cards.length, initialIndex]);
 
   const renderCardContent = (card: AnimatedCardData) => {
     const productCard = "product" in card ? (card as ProductCardData) : null;
@@ -651,7 +657,7 @@ function AnimatedCards({
         <div className="product-preview-card-content">
           <div className="product-preview-card-header">
             <strong>{productCard.product.name}</strong>
-            <span>{productCard.product.previewLabel}</span>
+            <span>{getProductSubtitle(productCard.product)}</span>
           </div>
           <div className="product-preview-media">
             <img src={productCard.product.images[0].src} alt={productCard.product.images[0].alt} loading="lazy" />
@@ -920,7 +926,7 @@ function ProductDetailModal({ product, onClose }: { product: Product | null; onC
             </button>
 
             <div className="product-detail-header">
-              <span>{product.previewLabel}</span>
+              <span>{getProductSubtitle(product)}</span>
               <h2 id="product-detail-title">{product.name}</h2>
               <p>{product.description}</p>
             </div>
@@ -1083,18 +1089,50 @@ function ConceptTopbar({ navigate }: { navigate: (path: string, scrollTargetId?:
 
 function HeroProductsScene({ progress, onProductSelect }: { progress: MotionValue<number>; onProductSelect: (product: Product) => void }) {
   const featuredProduct = products.find((product) => product.name === "Caprolactam") ?? products[0];
+  const featuredProductIndex = Math.max(0, products.findIndex((product) => product.name === featuredProduct.name));
+  const [activeProductIndex, setActiveProductIndex] = useState(featuredProductIndex);
+  const loopProductIndex = (index: number) => ((index % products.length) + products.length) % products.length;
+  const activeProduct = products[loopProductIndex(activeProductIndex)];
+  const goToProduct = (index: number) => {
+    setActiveProductIndex(loopProductIndex(index));
+  };
+  const moveProductCarousel = (direction: number) => {
+    setActiveProductIndex((current) => loopProductIndex(current + direction));
+  };
+  const getSignedProductOffset = (index: number) => {
+    let offset = (index - loopProductIndex(activeProductIndex) + products.length) % products.length;
+    if (offset > products.length / 2) {
+      offset -= products.length;
+    }
+    return offset;
+  };
   const chemX = useTransform(progress, [0, 0.82], ["0vw", "-64vw"]);
   const bridgeX = useTransform(progress, [0, 0.82], ["0vw", "64vw"]);
   const wordOpacity = useTransform(progress, [0, 0.62], [1, 0]);
   const nexusY = useTransform(progress, [0, 0.58], ["0vh", "-18vh"]);
   const nexusOpacity = useTransform(progress, [0, 0.46], [1, 0]);
-  const cardX = useTransform(progress, [0, 0.9], ["calc(-50% + 16vw)", "-50%"]);
-  const cardY = useTransform(progress, [0, 0.9], ["8vh", "-50%"]);
-  const cardScale = useTransform(progress, [0, 0.9], [0.96, 1.15]);
+  const cardX = useTransform(progress, [0, 0.55], ["calc(-50% + 16vw)", "-50%"]);
+  const cardY = useTransform(progress, [0, 0.55], ["8vh", "-50%"]);
+  const cardScale = useTransform(progress, [0, 0.55], [0.96, 1.08]);
   const productTitleY = useTransform(progress, [0.38, 0.74], [60, 0]);
   const productTitleOpacity = useTransform(progress, [0.38, 0.68], [0, 1]);
   const productTextY = useTransform(progress, [0.46, 0.82], [80, 0]);
   const productTextOpacity = useTransform(progress, [0.46, 0.78], [0, 1]);
+  const sideCardOpacity = useTransform(progress, [0.52, 0.75], [0, 1]);
+  const carouselChromeOpacity = useTransform(progress, [0.62, 0.84], [0, 1]);
+  const carouselChromeY = useTransform(progress, [0.62, 0.84], [18, 0]);
+
+  const renderHeroProductCardContent = (product: Product) => (
+    <>
+      <div>
+        <strong>{product.name}</strong>
+        <span>{getProductSubtitle(product)}</span>
+      </div>
+      <div className="concept-formula-box product-preview-media">
+        <img src={product.images[0].src} alt={product.images[0].alt} loading={product.name === activeProduct.name ? "eager" : "lazy"} />
+      </div>
+    </>
+  );
 
   return (
     <div className="hero-section concept-hero">
@@ -1120,35 +1158,78 @@ function HeroProductsScene({ progress, onProductSelect }: { progress: MotionValu
         </motion.p>
       </motion.div>
 
-      <motion.div
-        className="concept-card"
-        aria-label="Featured product"
-        role="button"
-        tabIndex={0}
-        style={{ x: cardX, y: cardY, scale: cardScale }}
-        onClick={() => onProductSelect(featuredProduct)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            onProductSelect(featuredProduct);
-          }
-        }}
-      >
-        <div>
-          <strong>{featuredProduct.name}</strong>
-          <span>{featuredProduct.previewLabel}</span>
-        </div>
-        <div className="concept-formula-box">
-          <img src={featuredProduct.images[0].src} alt={featuredProduct.images[0].alt} loading="eager" />
-        </div>
-        <div className="concept-card-nav" aria-hidden="true">
-          <span>{"<"}</span>
-          <span>{">"}</span>
-          <i />
-          <i />
-          <i />
-          <i />
-          <i />
+      <motion.div className="home-carousel-track-layer" style={{ x: cardX, y: cardY, scale: cardScale }}>
+        {products.map((product, index) => {
+          const signedOffset = getSignedProductOffset(index);
+          const distance = Math.abs(signedOffset);
+          const isCenter = distance === 0;
+          const isEdgePeek = distance === 2;
+          const isVisible = distance <= 2;
+          return (
+            <motion.div
+              className="home-carousel-track-item"
+              data-side={signedOffset < 0 ? "left" : "right"}
+              data-distance={Math.min(distance, 3)}
+              aria-hidden={!isVisible}
+              key={product.name}
+              initial={false}
+              animate={{
+                x: signedOffset * 410,
+                opacity: isVisible ? (isEdgePeek ? 0.28 : 1) : 0,
+                scale: isCenter ? 1 : isEdgePeek ? 0.94 : 0.98,
+                filter: isEdgePeek ? "blur(1.4px)" : "blur(0px)",
+              }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              style={{
+                zIndex: 8 - Math.min(distance, 6),
+                pointerEvents: distance <= 1 ? "auto" : "none",
+              }}
+              onClick={() => {
+                if (distance <= 1) onProductSelect(product);
+              }}
+              onKeyDown={(event) => {
+                if (distance > 1) return;
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onProductSelect(product);
+                }
+              }}
+            >
+              <motion.div
+                className={`concept-card home-carousel-product-card ${isCenter ? "home-carousel-center-card" : "home-carousel-side-card"} ${
+                  isEdgePeek ? `home-carousel-edge-card home-carousel-edge-card-${signedOffset < 0 ? "left" : "right"}` : ""
+                }`.trim()}
+                aria-label={`Open details for ${product.name}`}
+                role="button"
+                tabIndex={distance <= 1 ? 0 : -1}
+                style={{ opacity: isCenter ? 1 : sideCardOpacity }}
+              >
+                {renderHeroProductCardContent(product)}
+              </motion.div>
+            </motion.div>
+          );
+        })}
+      </motion.div>
+
+      <motion.div className="home-carousel-chrome" style={{ opacity: carouselChromeOpacity, x: "-50%", y: carouselChromeY }}>
+        <button className="home-carousel-arrow home-carousel-arrow-left" type="button" aria-label="Previous product" onClick={() => moveProductCarousel(-1)}>
+          {"‹"}
+        </button>
+        <button className="home-carousel-arrow home-carousel-arrow-right" type="button" aria-label="Next product" onClick={() => moveProductCarousel(1)}>
+          {"›"}
+        </button>
+        <div className="carousel-controls home-carousel-dots" aria-label="Product carousel controls">
+          <div className="carousel-dots">
+            {products.map((product, index) => (
+              <button
+                className={`carousel-dot ${index === loopProductIndex(activeProductIndex) ? "active" : ""}`.trim()}
+                key={product.name}
+                type="button"
+                aria-label={`Go to ${product.name}`}
+                onClick={() => goToProduct(index)}
+              />
+            ))}
+          </div>
         </div>
       </motion.div>
     </div>
@@ -1826,3 +1907,4 @@ function Footer({ navigate }: { navigate: (path: string, scrollTargetId?: string
 }
 
 export default App;
+
