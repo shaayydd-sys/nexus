@@ -1,4 +1,4 @@
-import { CSSProperties, FormEvent, ReactNode, type KeyboardEvent as ReactKeyboardEvent, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, FormEvent, ReactNode, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, type MotionStyle, type MotionValue, type Variants, useScroll, useSpring, useTransform } from "framer-motion";
 import Lenis from "lenis";
 import gsap from "gsap";
@@ -350,7 +350,9 @@ function PremiumCarousel<T>({
 }: PremiumCarouselProps<T>) {
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const carouselRef = useRef<HTMLDivElement | null>(null);
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const [measuredCardHeight, setMeasuredCardHeight] = useState<number | null>(null);
+  const [resolvedItemOffset, setResolvedItemOffset] = useState(itemOffset);
   const loopCarouselIndex = (index: number) => {
     if (items.length === 0) return 0;
     return ((index % items.length) + items.length) % items.length;
@@ -361,6 +363,37 @@ function PremiumCarousel<T>({
   useEffect(() => {
     setActiveIndex(loopCarouselIndex(initialIndex));
   }, [items.length, initialIndex]);
+
+  useLayoutEffect(() => {
+    let frameId = 0;
+    const resolveItemOffset = () => {
+      const root = carouselRef.current;
+      if (!root) return;
+
+      const cssOffset = getComputedStyle(root).getPropertyValue("--premium-carousel-item-offset").trim();
+      const nextOffset = cssOffset
+        ? Number.parseFloat(cssOffset.endsWith("vw")
+          ? String((window.innerWidth * Number.parseFloat(cssOffset)) / 100)
+          : cssOffset)
+        : itemOffset;
+
+      if (Number.isFinite(nextOffset) && nextOffset > 0) {
+        setResolvedItemOffset((current) => (Math.abs(current - nextOffset) > 0.5 ? nextOffset : current));
+      }
+    };
+
+    const scheduleResolve = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(resolveItemOffset);
+    };
+
+    scheduleResolve();
+    window.addEventListener("resize", scheduleResolve);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", scheduleResolve);
+    };
+  }, [itemOffset]);
 
   useLayoutEffect(() => {
     if (isHero) return undefined;
@@ -408,6 +441,24 @@ function PremiumCarousel<T>({
 
   const goToItem = (index: number) => setActiveIndex(loopCarouselIndex(index));
   const moveCarousel = (direction: number) => setActiveIndex((current) => loopCarouselIndex(current + direction));
+  const isMobileCarousel = () => window.matchMedia("(max-width: 768px)").matches;
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!isMobileCarousel() || event.pointerType === "mouse" || items.length < 2) return;
+    swipeStartRef.current = { x: event.clientX, y: event.clientY };
+  };
+  const handlePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start || !isMobileCarousel() || items.length < 2) return;
+
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    if (Math.abs(deltaX) < 34 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+    moveCarousel(deltaX < 0 ? 1 : -1);
+  };
+  const handlePointerCancel = () => {
+    swipeStartRef.current = null;
+  };
   const getSignedOffset = (index: number) => {
     let offset = (index - normalizedActiveIndex + items.length) % items.length;
     if (offset > items.length / 2) {
@@ -424,6 +475,9 @@ function PremiumCarousel<T>({
       className={`premium-carousel ${isHero ? "premium-carousel-hero" : "premium-carousel-section"} ${className}`.trim()}
       ref={carouselRef}
       style={sectionStyle}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
     >
       <motion.div
         className="home-carousel-track-layer premium-carousel-track-layer"
@@ -459,7 +513,7 @@ function PremiumCarousel<T>({
               key={getKey(item)}
               initial={false}
               animate={{
-                x: signedOffset * itemOffset,
+                x: signedOffset * resolvedItemOffset,
                 opacity: isVisible ? (isEdgePeek ? 0.28 : 1) : 0,
                 scale: isCenter ? 1 : isEdgePeek ? 0.94 : 0.98,
                 filter: isEdgePeek ? "blur(1.4px)" : "blur(0px)",
@@ -596,11 +650,14 @@ function MotionRuntime({ page }: { page: Page }) {
 
     gsap.registerPlugin(ScrollTrigger);
 
-    const lenis = new Lenis({
-      duration: 1.18,
-      easing: (t) => 1 - Math.pow(1 - t, 4),
-      smoothWheel: true,
-    });
+    const isTouchDevice = window.matchMedia("(pointer: coarse)").matches;
+    const lenis = isTouchDevice
+      ? null
+      : new Lenis({
+          duration: 1.18,
+          easing: (t) => 1 - Math.pow(1 - t, 4),
+          smoothWheel: true,
+        });
 
     let frameId = 0;
     const parallaxItems = Array.from(document.querySelectorAll<HTMLElement>("[data-parallax]"));
@@ -615,10 +672,14 @@ function MotionRuntime({ page }: { page: Page }) {
       });
     };
 
-    lenis.on("scroll", ScrollTrigger.update);
+    if (lenis) {
+      lenis.on("scroll", ScrollTrigger.update);
+    } else {
+      window.addEventListener("scroll", ScrollTrigger.update, { passive: true });
+    }
 
     const raf = (time: number) => {
-      lenis.raf(time);
+      lenis?.raf(time);
       updateParallax();
       frameId = requestAnimationFrame(raf);
     };
@@ -705,7 +766,11 @@ function MotionRuntime({ page }: { page: Page }) {
       originalHeadings.forEach(({ target, html }) => {
         target.innerHTML = html;
       });
-      lenis.destroy();
+      if (lenis) {
+        lenis.destroy();
+      } else {
+        window.removeEventListener("scroll", ScrollTrigger.update);
+      }
     };
   }, [page]);
 
@@ -1251,7 +1316,7 @@ function ConceptTopbar({ navigate, page }: { navigate: (path: string, scrollTarg
           aria-expanded={isConceptMenuOpen}
           onClick={(event) => {
             event.preventDefault();
-            if (window.matchMedia("(hover: none)").matches) {
+            if (window.matchMedia("(pointer: coarse)").matches) {
               setIsConceptMenuOpen((value) => !value);
             }
           }}
@@ -1568,11 +1633,11 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
     camera.lookAt(0, -0.15, 0);
 
     const renderer = new THREE.WebGLRenderer({
-      alpha: true,
+      alpha: false,
       antialias: true,
       powerPreference: "high-performance",
     });
-    renderer.setClearColor(0xffffff, 0);
+    renderer.setClearColor(0xf8f6f1, 1);
     const isMobileViewport = () => window.matchMedia("(max-width: 768px)").matches;
     const getPixelRatio = () => Math.min(window.devicePixelRatio || 1, isMobileViewport() ? 1.5 : 1.8);
     renderer.setPixelRatio(getPixelRatio());
@@ -1650,8 +1715,7 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
-      const scale = width < 760 ? 1.46 : 1.48;
-      group.scale.setScalar(scale);
+      group.scale.setScalar(width < 760 ? 1.72 : 1.48);
     };
 
     const resizeObserver = new ResizeObserver(resize);
@@ -1682,8 +1746,8 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
       const sectionBase = 0.92 - Math.min(currentProgress * 0.2, 0.2);
       const readabilityFade = smoothStep(0.52, 0.74, currentProgress) * (1 - smoothStep(0.86, 1.04, currentProgress));
       const contactReturn = smoothStep(0.86, 1.02, currentProgress) * 0.14;
-      const opacityFloor = width < 760 ? 0.68 : 0.65;
-      const helixOpacity = Math.max(opacityFloor, sectionBase - readabilityFade * 0.34 + contactReturn);
+      const mobileViewport = width < 760;
+      const helixOpacity = Math.max(mobileViewport ? 0.7 : 0.65, sectionBase - readabilityFade * 0.34 + contactReturn);
       mount.style.opacity = "1";
       mount.style.transform = "translate3d(0, 0, 0)";
 
@@ -1701,13 +1765,13 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
         });
       }
       group.position.set(
-        width < 760 ? -0.38 + currentProgress * 0.12 : -0.64 + currentProgress * 0.22,
-        width < 760 ? 0.18 - currentProgress * 3.35 + breathing : -0.1 - currentProgress * 2.7 + breathing,
-        -1.08 + currentProgress * 0.9 + breathing * 0.32,
+        mobileViewport ? -0.22 + currentProgress * 0.14 : -0.64 + currentProgress * 0.22,
+        mobileViewport ? 0.08 - currentProgress * 2.82 + breathing : -0.1 - currentProgress * 2.7 + breathing,
+        mobileViewport ? -0.9 + breathing * 0.24 : -1.08 + currentProgress * 0.9 + breathing * 0.32,
       );
       group.rotation.set(
         THREE.MathUtils.degToRad(-14) + roll,
-        -0.72 + currentProgress * 1.08 + idle,
+        mobileViewport ? -0.62 + currentProgress * 0.54 + idle : -0.72 + currentProgress * 1.08 + idle,
         THREE.MathUtils.degToRad(10) - roll * 0.45,
       );
 
@@ -2364,4 +2428,3 @@ function Footer({ navigate }: { navigate: (path: string, scrollTargetId?: string
 }
 
 export default App;
-
