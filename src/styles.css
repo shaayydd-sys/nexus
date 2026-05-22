@@ -3746,12 +3746,10 @@ a:focus-visible {
     --mobile-nav-top: max(14px, env(safe-area-inset-top));
     --mobile-nav-height: 68px;
     --mobile-nav-clearance: calc(var(--mobile-nav-top) + var(--mobile-nav-height) + 30px);
-    /* iOS Safari floats a ~80px URL-bar pill OVER the page that is NOT
-       counted in env(safe-area-inset-bottom). Reserve extra room so cards
-       never sit under it. The 96px constant accounts for the URL bar +
-       breathing space, plus we still add the home-indicator inset. */
-    --mobile-url-bar-overlay: 96px;
-    --mobile-section-bottom: calc(env(safe-area-inset-bottom) + var(--mobile-url-bar-overlay));
+    /* Let the page background flow under the iOS Safari URL bar pill so
+       it stays translucent (native blur). Section padding only needs to
+       account for the device home indicator. */
+    --mobile-section-bottom: max(26px, env(safe-area-inset-bottom));
     --premium-carousel-item-offset: 74vw;
   }
 
