@@ -924,6 +924,21 @@ function ScrollSection({ label, title, text, height = "180vh", className = "", c
   );
 }
 
+function useIsMobileViewport() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 768px)");
+    const update = () => setIsMobile(query.matches);
+
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  return isMobile;
+}
+
 function AnimatedTitle({
   progress,
   children,
@@ -935,9 +950,17 @@ function AnimatedTitle({
   className?: string;
   startVisible?: boolean;
 }) {
-  const opacity = useTransform(progress, startVisible ? [0, 0.75, 1] : [0, 0.15, 0.75, 1], startVisible ? [1, 1, 0] : [0, 1, 1, 0]);
-  const y = useTransform(progress, startVisible ? [0, 0.8, 1] : [0, 0.2, 0.8, 1], startVisible ? [0, 0, -80] : [80, 0, 0, -80]);
-  const scale = useTransform(progress, startVisible ? [0, 1] : [0, 0.3, 1], startVisible ? [1, 1.04] : [0.96, 1, 1.04]);
+  const isMobile = useIsMobileViewport();
+  const opacityRange = startVisible
+    ? isMobile ? [0, 0.88, 1] : [0, 0.75, 1]
+    : isMobile ? [0, 0.18, 0.88, 1] : [0, 0.15, 0.75, 1];
+  const yRange = startVisible
+    ? isMobile ? [0, 0.9, 1] : [0, 0.8, 1]
+    : isMobile ? [0, 0.24, 0.9, 1] : [0, 0.2, 0.8, 1];
+  const scaleRange = startVisible ? [0, 1] : isMobile ? [0, 0.34, 1] : [0, 0.3, 1];
+  const opacity = useTransform(progress, opacityRange, startVisible ? [1, 1, 0] : [0, 1, 1, 0]);
+  const y = useTransform(progress, yRange, startVisible ? [0, 0, -80] : [80, 0, 0, -80]);
+  const scale = useTransform(progress, scaleRange, startVisible ? [1, 1.04] : [0.96, 1, 1.04]);
 
   return (
     <motion.h2 className={`animated-title ${className}`.trim()} style={{ opacity, y, scale }}>
@@ -957,8 +980,15 @@ function AnimatedParagraph({
   className?: string;
   startVisible?: boolean;
 }) {
-  const opacity = useTransform(progress, startVisible ? [0, 0.78, 1] : [0, 0.22, 0.78, 1], startVisible ? [1, 1, 0] : [0, 1, 1, 0]);
-  const y = useTransform(progress, startVisible ? [0, 0.82, 1] : [0, 0.28, 0.82, 1], startVisible ? [0, 0, -56] : [80, 0, 0, -56]);
+  const isMobile = useIsMobileViewport();
+  const opacityRange = startVisible
+    ? isMobile ? [0, 0.9, 1] : [0, 0.78, 1]
+    : isMobile ? [0, 0.26, 0.9, 1] : [0, 0.22, 0.78, 1];
+  const yRange = startVisible
+    ? isMobile ? [0, 0.92, 1] : [0, 0.82, 1]
+    : isMobile ? [0, 0.32, 0.92, 1] : [0, 0.28, 0.82, 1];
+  const opacity = useTransform(progress, opacityRange, startVisible ? [1, 1, 0] : [0, 1, 1, 0]);
+  const y = useTransform(progress, yRange, startVisible ? [0, 0, -56] : [80, 0, 0, -56]);
 
   return (
     <motion.p className={`animated-paragraph ${className}`.trim()} style={{ opacity, y }}>
@@ -984,8 +1014,15 @@ function AnimatedCards({
   startVisible?: boolean;
   initialIndex?: number;
 }) {
-  const opacity = useTransform(progress, startVisible ? [0, 0.9, 1] : [0, 0.16, 0.9, 1], startVisible ? [1, 1, 0] : [0, 1, 1, 0]);
-  const y = useTransform(progress, startVisible ? [0, 0.86, 1] : [0, 0.22, 0.86, 1], startVisible ? [0, 0, 24] : [70, 0, 0, 24]);
+  const isMobile = useIsMobileViewport();
+  const opacityRange = startVisible
+    ? isMobile ? [0, 0.94, 1] : [0, 0.9, 1]
+    : isMobile ? [0, 0.2, 0.94, 1] : [0, 0.16, 0.9, 1];
+  const yRange = startVisible
+    ? isMobile ? [0, 0.92, 1] : [0, 0.86, 1]
+    : isMobile ? [0, 0.26, 0.92, 1] : [0, 0.22, 0.86, 1];
+  const opacity = useTransform(progress, opacityRange, startVisible ? [1, 1, 0] : [0, 1, 1, 0]);
+  const y = useTransform(progress, yRange, startVisible ? [0, 0, 24] : [70, 0, 0, 24]);
 
   const renderCardContent = (card: AnimatedCardData) => {
     const productCard = "product" in card ? (card as ProductCardData) : null;

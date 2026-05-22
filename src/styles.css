@@ -3750,6 +3750,7 @@ a:focus-visible {
        it stays translucent (native blur). Section padding only needs to
        account for the device home indicator. */
     --mobile-section-bottom: max(26px, env(safe-area-inset-bottom));
+    --mobile-readable-bottom-buffer: max(104px, calc(env(safe-area-inset-bottom) + 96px));
     --premium-carousel-item-offset: 74vw;
   }
 
@@ -3799,31 +3800,33 @@ a:focus-visible {
   }
 
   .concept-topbar-row {
-    grid-template-columns: 46px minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) 46px;
     height: 50px;
-    gap: 8px;
+    gap: 12px;
   }
 
   .concept-menu {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
     width: 40px;
     height: 40px;
   }
 
   .concept-mark {
-    width: 82px;
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    width: 92px;
     min-width: 0;
   }
 
   .concept-mark img {
-    width: 78px;
+    width: 86px;
   }
 
   .concept-contact {
-    min-width: 86px;
-    height: 40px;
-    padding: 0 12px;
-    font-size: 0.56rem;
-    letter-spacing: 0.035em;
+    display: none;
   }
 
   .concept-navbar-menu {
@@ -3845,13 +3848,42 @@ a:focus-visible {
   }
 
   .scroll-section {
-    min-height: var(--scroll-section-height, 160vh);
+    height: auto;
+    min-height: var(--scroll-section-height, 220dvh);
+    padding-bottom: var(--mobile-readable-bottom-buffer);
+    box-sizing: content-box;
+  }
+
+  .hero-scroll-stage {
+    --scroll-section-height: 230dvh !important;
+  }
+
+  .trading-scope-scene,
+  .business-activity-scene,
+  .products-inquiry-scene,
+  .contact-inquiry-scene {
+    --scroll-section-height: 220dvh !important;
+  }
+
+  .legal-information-scene,
+  .products-catalog-scene,
+  .about-profile-scene {
+    --scroll-section-height: 240dvh !important;
+  }
+
+  .about-legal-scene {
+    --scroll-section-height: 260dvh !important;
   }
 
   .scroll-section__sticky {
     min-height: 100vh;
     min-height: 100dvh;
     overflow: visible;
+  }
+
+  .scroll-section:not(.hero-scroll-stage) .scroll-section__sticky {
+    height: calc(100dvh + var(--mobile-readable-bottom-buffer));
+    min-height: calc(100dvh + var(--mobile-readable-bottom-buffer));
   }
 
   .cinematic-scene {
@@ -3942,8 +3974,12 @@ a:focus-visible {
   .animated-cards {
     width: 100%;
     max-width: none;
-    margin-top: 26px;
+    margin-top: clamp(40px, 6dvh, 58px);
     justify-self: stretch;
+  }
+
+  .split-cinematic-scene .animated-cards {
+    margin-top: clamp(38px, 5.5dvh, 52px);
   }
 
   .animated-cards-grid,
@@ -4247,14 +4283,12 @@ a:focus-visible {
 
   .contact-page-cinematic,
   .contact-scroll-experience {
-    min-height: 220svh;
-    min-height: 220dvh;
+    min-height: 260dvh;
   }
 
   .contact-intro-scroll-section {
-    height: 108svh;
-    height: 108dvh;
-    min-height: 0;
+    height: auto;
+    min-height: 118dvh;
   }
 
   .contact-intro-sticky {
@@ -4287,9 +4321,9 @@ a:focus-visible {
 
   .contact-form-scroll-section {
     align-items: flex-start;
-    min-height: 112svh;
-    min-height: 112dvh;
-    padding: var(--mobile-nav-clearance) 0 var(--mobile-section-bottom);
+    height: auto;
+    min-height: 150dvh;
+    padding: var(--mobile-nav-clearance) 0 var(--mobile-readable-bottom-buffer);
     scroll-margin-top: 0;
   }
 
@@ -4314,7 +4348,7 @@ a:focus-visible {
 
   .contact-form-stage {
     width: calc(100vw - 32px);
-    margin-top: 26px;
+    margin-top: clamp(34px, 5dvh, 48px);
   }
 
   .contact-form,
