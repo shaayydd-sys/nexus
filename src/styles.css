@@ -1049,6 +1049,20 @@ img {
   margin: 0;
 }
 
+.shared-helix-entrance {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform-origin: center center;
+  will-change: opacity, transform;
+}
+
+.shared-helix-entrance .page-helix-scene {
+  position: absolute;
+}
+
 .page-helix-scene {
   position: fixed;
   top: -120px;

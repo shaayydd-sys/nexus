@@ -231,6 +231,71 @@ function getProductSubtitle(product: Product) {
   return product.formula ?? product.previewValue;
 }
 
+const cinematicEase = [0.22, 1, 0.36, 1] as [number, number, number, number];
+
+const pageHeroContainerVariants: Variants = {
+  hidden: {},
+  visible: {
+    transition: {
+      delayChildren: 0.15,
+      staggerChildren: 0.11,
+    },
+  },
+};
+
+const heroItemVariants: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 36,
+    filter: "blur(8px)",
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.85,
+      ease: cinematicEase,
+    },
+  },
+};
+
+const titleLineVariants: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 50,
+    filter: "blur(8px)",
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.95,
+      ease: cinematicEase,
+    },
+  },
+};
+
+const cardEntranceVariants: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 44,
+    scale: 0.96,
+    filter: "blur(8px)",
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.9,
+      ease: cinematicEase,
+    },
+  },
+};
+
 type PremiumCarouselRenderState = {
   activeIndex: number;
   distance: number;
@@ -360,7 +425,13 @@ function PremiumCarousel<T>({
       ref={carouselRef}
       style={sectionStyle}
     >
-      <motion.div className="home-carousel-track-layer premium-carousel-track-layer" style={trackStyle}>
+      <motion.div
+        className="home-carousel-track-layer premium-carousel-track-layer"
+        initial={isHero ? { opacity: 0 } : false}
+        animate={isHero ? { opacity: 1 } : undefined}
+        transition={isHero ? { duration: 0.9, delay: 0.65, ease: cinematicEase } : undefined}
+        style={trackStyle}
+      >
         {items.map((item, index) => {
           const signedOffset = getSignedOffset(index);
           const distance = Math.abs(signedOffset);
@@ -501,8 +572,8 @@ function App() {
   return (
     <>
       <MotionRuntime page={page} />
-      <SharedHelixBackground />
-      <ConceptTopbar navigate={navigate} />
+      <SharedHelixBackground page={page} />
+      <ConceptTopbar navigate={navigate} page={page} />
       <main className="home-main">
         {page === "home" && <HomePage navigate={navigate} onProductSelect={setSelectedProduct} />}
         {page === "products" && <ProductsPage navigate={navigate} onProductSelect={setSelectedProduct} />}
@@ -1114,11 +1185,22 @@ function ProductDetailModal({ product, onClose }: { product: Product | null; onC
   );
 }
 
-function SharedHelixBackground() {
-  return <HeroHelixScene className="page-helix-scene shared-helix-background" />;
+function SharedHelixBackground({ page }: { page: Page }) {
+  return (
+    <motion.div
+      className="shared-helix-entrance"
+      key={`helix-${page}`}
+      initial={{ opacity: 0, scale: 1.03 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 1.2, ease: cinematicEase }}
+      aria-hidden="true"
+    >
+      <HeroHelixScene className="page-helix-scene shared-helix-background" />
+    </motion.div>
+  );
 }
 
-function ConceptTopbar({ navigate }: { navigate: (path: string, scrollTargetId?: string) => void }) {
+function ConceptTopbar({ navigate, page }: { navigate: (path: string, scrollTargetId?: string) => void; page: Page }) {
   const [isConceptMenuOpen, setIsConceptMenuOpen] = useState(false);
 
   const handleLogoClick = () => {
@@ -1133,8 +1215,9 @@ function ConceptTopbar({ navigate }: { navigate: (path: string, scrollTargetId?:
   return (
     <motion.nav
       className="concept-topbar"
+      key={`topbar-${page}`}
       aria-label="Hero navigation"
-      initial={false}
+      initial={{ opacity: 0, y: -24 }}
       onMouseEnter={() => setIsConceptMenuOpen(true)}
       onMouseLeave={() => setIsConceptMenuOpen(false)}
       onFocus={() => setIsConceptMenuOpen(true)}
@@ -1145,13 +1228,19 @@ function ConceptTopbar({ navigate }: { navigate: (path: string, scrollTargetId?:
         }
       }}
       animate={{
+        opacity: 1,
+        y: 0,
         height: isConceptMenuOpen ? 320 : 72,
         borderTopLeftRadius: 36,
         borderTopRightRadius: 36,
         borderBottomLeftRadius: isConceptMenuOpen ? 32 : 36,
         borderBottomRightRadius: isConceptMenuOpen ? 32 : 36,
       }}
-      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      transition={{
+        default: { duration: 0.45, ease: cinematicEase },
+        opacity: { duration: 0.7, delay: 0.1, ease: cinematicEase },
+        y: { duration: 0.7, delay: 0.1, ease: cinematicEase },
+      }}
       style={{ x: "-50%" }}
     >
       <div className="concept-topbar-row">
@@ -1261,7 +1350,12 @@ function HeroProductsScene({
 
   return (
     <div className="hero-section concept-hero">
-      <div className="concept-brand">
+      <motion.div
+        className="concept-brand"
+        initial={{ opacity: 0, y: 36, filter: "blur(8px)" }}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        transition={{ duration: 1.05, delay: 0.22, ease: cinematicEase }}
+      >
         <motion.h1 className="concept-title" style={{ y: nexusY, opacity: nexusOpacity }}>
           NEXUS
         </motion.h1>
@@ -1271,7 +1365,7 @@ function HeroProductsScene({
         <motion.span className="concept-word concept-word-right" style={{ x: bridgeX, opacity: wordOpacity }}>
           BRIDGE
         </motion.span>
-      </div>
+      </motion.div>
 
       <motion.div className="concept-product-copy">
         <motion.h2 style={{ y: productTitleY, opacity: productTitleOpacity }}>
@@ -1718,39 +1812,50 @@ function ProductsCatalogScene({
   }));
 
   return (
-    <div className="cinematic-scene card-cinematic-scene page-cinematic-scene">
-      <span className="cinematic-label">Products</span>
-      <AnimatedTitle progress={progress} startVisible>
-        <span className="products-title-line">Six products for</span>
-        <span className="products-title-line">qualified chemical inquiries.</span>
-      </AnimatedTitle>
-      <AnimatedParagraph progress={progress} startVisible>
-        Product names, grade, origin, packaging, availability, and documentation are confirmed through direct commercial inquiry.
-      </AnimatedParagraph>
-      <AnimatedCards
-        progress={progress}
-        cards={productCards}
-        className="product-category-cards page-product-cards"
-        onCardClick={(card) => {
-          if ("product" in card) {
-            onProductSelect((card as ProductCardData).product);
+    <motion.div
+      className="cinematic-scene card-cinematic-scene page-cinematic-scene"
+      initial="hidden"
+      animate="visible"
+      variants={pageHeroContainerVariants}
+    >
+      <motion.span className="cinematic-label" variants={heroItemVariants}>Products</motion.span>
+      <motion.div variants={heroItemVariants}>
+        <AnimatedTitle progress={progress} startVisible>
+          <motion.span className="products-title-line" variants={titleLineVariants}>Six products for</motion.span>
+          <motion.span className="products-title-line" variants={titleLineVariants}>qualified chemical inquiries.</motion.span>
+        </AnimatedTitle>
+      </motion.div>
+      <motion.div variants={heroItemVariants}>
+        <AnimatedParagraph progress={progress} startVisible>
+          Product names, grade, origin, packaging, availability, and documentation are confirmed through direct commercial inquiry.
+        </AnimatedParagraph>
+      </motion.div>
+      <motion.div variants={cardEntranceVariants}>
+        <AnimatedCards
+          progress={progress}
+          cards={productCards}
+          className="product-category-cards page-product-cards"
+          onCardClick={(card) => {
+            if ("product" in card) {
+              onProductSelect((card as ProductCardData).product);
+            }
+          }}
+          startVisible
+          carouselCta={
+            <>
+              <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
+                Request a Quote
+                <ArrowRight size={18} weight="bold" />
+              </button>
+              <button className="secondary-button" type="button" onClick={() => navigate("#/about")}>
+                View Company Details
+                <ArrowRight size={18} weight="bold" />
+              </button>
+            </>
           }
-        }}
-        startVisible
-        carouselCta={
-          <>
-            <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
-              Request a Quote
-              <ArrowRight size={18} weight="bold" />
-            </button>
-            <button className="secondary-button" type="button" onClick={() => navigate("#/about")}>
-              View Company Details
-              <ArrowRight size={18} weight="bold" />
-            </button>
-          </>
-        }
-      />
-    </div>
+        />
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -1819,25 +1924,36 @@ function AboutProfileScene({ progress, navigate }: { progress: MotionValue<numbe
     },
   ];
   return (
-    <div className="cinematic-scene card-cinematic-scene page-cinematic-scene">
-      <span className="cinematic-label">About Us</span>
-      <AnimatedTitle progress={progress} startVisible>A registered Indonesian company for chemical trade brokerage.</AnimatedTitle>
-      <AnimatedParagraph progress={progress} startVisible>
-        The company profile is kept close to the inquiry path so buyers and suppliers can verify the business before opening a commercial discussion.
-      </AnimatedParagraph>
-      <AnimatedCards
-        progress={progress}
-        cards={cards}
-        className="legal-cards page-profile-cards"
-        startVisible
-        carouselCta={
-          <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
-            Contact Us
-            <ArrowRight size={18} weight="bold" />
-          </button>
-        }
-      />
-    </div>
+    <motion.div
+      className="cinematic-scene card-cinematic-scene page-cinematic-scene"
+      initial="hidden"
+      animate="visible"
+      variants={pageHeroContainerVariants}
+    >
+      <motion.span className="cinematic-label" variants={heroItemVariants}>About Us</motion.span>
+      <motion.div variants={heroItemVariants}>
+        <AnimatedTitle progress={progress} startVisible>A registered Indonesian company for chemical trade brokerage.</AnimatedTitle>
+      </motion.div>
+      <motion.div variants={heroItemVariants}>
+        <AnimatedParagraph progress={progress} startVisible>
+          The company profile is kept close to the inquiry path so buyers and suppliers can verify the business before opening a commercial discussion.
+        </AnimatedParagraph>
+      </motion.div>
+      <motion.div variants={cardEntranceVariants}>
+        <AnimatedCards
+          progress={progress}
+          cards={cards}
+          className="legal-cards page-profile-cards"
+          startVisible
+          carouselCta={
+            <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
+              Contact Us
+              <ArrowRight size={18} weight="bold" />
+            </button>
+          }
+        />
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -1882,20 +1998,31 @@ function ContactIntroScene({ progress, onRequestQuote }: { progress: MotionValue
   return (
     <section className="contact-intro-scroll-section" aria-labelledby="contact-intro-title">
       <div className="contact-intro-sticky">
-        <div className="cinematic-scene contact-intro-scene">
-          <motion.h1 className="contact-intro-title" id="contact-intro-title" style={{ opacity: headingOpacity, y: headingY }}>
-            Send a chemical supply or brokerage inquiry.
-          </motion.h1>
-          <motion.p className="contact-intro-subtitle" style={{ opacity: subtitleOpacity, y: subtitleY }}>
-            Share the product, destination, volume range, and documentation needs so the team can start the right commercial discussion.
-          </motion.p>
-          <motion.div className="contact-intro-actions" style={{ opacity: buttonOpacity, y: buttonY }}>
-            <button className="primary-button contact-request-button" type="button" onClick={onRequestQuote}>
-              Request a Quote
-              <ArrowRight size={18} weight="bold" />
-            </button>
+        <motion.div
+          className="cinematic-scene contact-intro-scene"
+          initial="hidden"
+          animate="visible"
+          variants={pageHeroContainerVariants}
+        >
+          <motion.div variants={heroItemVariants}>
+            <motion.h1 className="contact-intro-title" id="contact-intro-title" style={{ opacity: headingOpacity, y: headingY }}>
+              Send a chemical supply or brokerage inquiry.
+            </motion.h1>
           </motion.div>
-        </div>
+          <motion.div variants={heroItemVariants}>
+            <motion.p className="contact-intro-subtitle" style={{ opacity: subtitleOpacity, y: subtitleY }}>
+              Share the product, destination, volume range, and documentation needs so the team can start the right commercial discussion.
+            </motion.p>
+          </motion.div>
+          <motion.div variants={cardEntranceVariants}>
+            <motion.div className="contact-intro-actions" style={{ opacity: buttonOpacity, y: buttonY }}>
+              <button className="primary-button contact-request-button" type="button" onClick={onRequestQuote}>
+                Request a Quote
+                <ArrowRight size={18} weight="bold" />
+              </button>
+            </motion.div>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );
