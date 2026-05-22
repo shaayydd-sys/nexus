@@ -1,5 +1,5 @@
-import { CSSProperties, FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion, type MotionValue, useScroll, useSpring, useTransform } from "framer-motion";
+import { CSSProperties, FormEvent, ReactNode, type KeyboardEvent as ReactKeyboardEvent, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, type MotionStyle, type MotionValue, type Variants, useScroll, useSpring, useTransform } from "framer-motion";
 import Lenis from "lenis";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -13,6 +13,7 @@ import {
   BadgeCheck,
   BriefcaseBusiness,
   Boxes,
+  ChevronDown,
   FileCheck,
   FileText as LucideFileText,
   FlaskConical,
@@ -99,7 +100,7 @@ const products: Product[] = [
   {
     name: "Cyclohexanone & Cyclohexane",
     status: "Product type",
-    previewLabel: "Category",
+    previewLabel: "Product",
     previewValue: "Technical Grade",
     shortDescription: "Solvent and Nylon-chain intermediates supplied for qualified industrial buyers.",
     description:
@@ -228,6 +229,232 @@ const legalRows = [
 
 function getProductSubtitle(product: Product) {
   return product.formula ?? product.previewValue;
+}
+
+type PremiumCarouselRenderState = {
+  activeIndex: number;
+  distance: number;
+  index: number;
+  isCenter: boolean;
+  isEdgePeek: boolean;
+  isVisible: boolean;
+  side: "left" | "right";
+  signedOffset: number;
+};
+
+type PremiumCarouselProps<T> = {
+  items: T[];
+  renderCard: (item: T, state: PremiumCarouselRenderState) => ReactNode;
+  getKey: (item: T) => string;
+  cardClassName: (item: T, state: PremiumCarouselRenderState) => string;
+  className?: string;
+  cta?: ReactNode;
+  dotsLabel?: string;
+  getAriaLabel?: (item: T) => string;
+  getDotLabel?: (item: T, index: number) => string;
+  initialIndex?: number;
+  itemOffset?: number;
+  mode?: "hero" | "section";
+  nextLabel?: string;
+  onItemClick?: (item: T, index: number) => void;
+  prevLabel?: string;
+  sideCardOpacity?: MotionStyle["opacity"];
+  trackStyle?: MotionStyle;
+  chromeStyle?: MotionStyle;
+};
+
+function PremiumCarousel<T>({
+  items,
+  renderCard,
+  getKey,
+  cardClassName,
+  className = "",
+  cta,
+  dotsLabel = "Carousel controls",
+  getAriaLabel,
+  getDotLabel,
+  initialIndex = 0,
+  itemOffset = 410,
+  mode = "section",
+  nextLabel = "Next item",
+  onItemClick,
+  prevLabel = "Previous item",
+  sideCardOpacity,
+  trackStyle,
+  chromeStyle,
+}: PremiumCarouselProps<T>) {
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
+  const carouselRef = useRef<HTMLDivElement | null>(null);
+  const [measuredCardHeight, setMeasuredCardHeight] = useState<number | null>(null);
+  const loopCarouselIndex = (index: number) => {
+    if (items.length === 0) return 0;
+    return ((index % items.length) + items.length) % items.length;
+  };
+  const normalizedActiveIndex = loopCarouselIndex(activeIndex);
+  const isHero = mode === "hero";
+
+  useEffect(() => {
+    setActiveIndex(loopCarouselIndex(initialIndex));
+  }, [items.length, initialIndex]);
+
+  useLayoutEffect(() => {
+    if (isHero) return undefined;
+
+    let frameId = 0;
+    const measureCards = () => {
+      const root = carouselRef.current;
+      if (!root || root.offsetParent === null) return;
+
+      const fallbackHeight = Number.parseFloat(getComputedStyle(root).getPropertyValue("--premium-carousel-card-height")) || 0;
+      const cards = Array.from(root.querySelectorAll<HTMLElement>(".premium-carousel-card"));
+      if (cards.length === 0) return;
+
+      const heights = cards.map((card) => {
+        const previousHeight = card.style.height;
+        const previousMinHeight = card.style.minHeight;
+        card.style.height = "auto";
+        card.style.minHeight = "0px";
+        const height = card.getBoundingClientRect().height;
+        card.style.height = previousHeight;
+        card.style.minHeight = previousMinHeight;
+        return height;
+      });
+      const nextHeight = Math.ceil(Math.max(fallbackHeight, ...heights));
+      if (!Number.isFinite(nextHeight) || nextHeight <= 0) return;
+
+      setMeasuredCardHeight((currentHeight) => (Math.abs((currentHeight ?? 0) - nextHeight) > 0.5 ? nextHeight : currentHeight));
+    };
+
+    const scheduleMeasure = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(measureCards);
+    };
+
+    scheduleMeasure();
+    window.addEventListener("resize", scheduleMeasure);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", scheduleMeasure);
+    };
+  }, [isHero, items.length]);
+
+  if (items.length === 0) return null;
+
+  const goToItem = (index: number) => setActiveIndex(loopCarouselIndex(index));
+  const moveCarousel = (direction: number) => setActiveIndex((current) => loopCarouselIndex(current + direction));
+  const getSignedOffset = (index: number) => {
+    let offset = (index - normalizedActiveIndex + items.length) % items.length;
+    if (offset > items.length / 2) {
+      offset -= items.length;
+    }
+    return offset;
+  };
+  const sectionStyle = !isHero && measuredCardHeight
+    ? ({ "--premium-carousel-measured-card-height": `${measuredCardHeight}px` } as CSSProperties)
+    : undefined;
+
+  return (
+    <div
+      className={`premium-carousel ${isHero ? "premium-carousel-hero" : "premium-carousel-section"} ${className}`.trim()}
+      ref={carouselRef}
+      style={sectionStyle}
+    >
+      <motion.div className="home-carousel-track-layer premium-carousel-track-layer" style={trackStyle}>
+        {items.map((item, index) => {
+          const signedOffset = getSignedOffset(index);
+          const distance = Math.abs(signedOffset);
+          const isCenter = distance === 0;
+          const isEdgePeek = distance === 2;
+          const isVisible = distance <= 2;
+          const side = signedOffset < 0 ? "left" : "right";
+          const state: PremiumCarouselRenderState = {
+            activeIndex: normalizedActiveIndex,
+            distance,
+            index,
+            isCenter,
+            isEdgePeek,
+            isVisible,
+            side,
+            signedOffset,
+          };
+
+          return (
+            <motion.div
+              className="home-carousel-track-item premium-carousel-track-item"
+              data-side={side}
+              data-distance={Math.min(distance, 3)}
+              aria-hidden={!isVisible}
+              key={getKey(item)}
+              initial={false}
+              animate={{
+                x: signedOffset * itemOffset,
+                opacity: isVisible ? (isEdgePeek ? 0.28 : 1) : 0,
+                scale: isCenter ? 1 : isEdgePeek ? 0.94 : 0.98,
+                filter: isEdgePeek ? "blur(1.4px)" : "blur(0px)",
+              }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              style={{
+                zIndex: 8 - Math.min(distance, 6),
+                pointerEvents: distance <= 1 ? "auto" : "none",
+              }}
+              onClick={() => {
+                if (distance <= 1) onItemClick?.(item, index);
+              }}
+              onKeyDown={(event) => {
+                if (!onItemClick || distance > 1) return;
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onItemClick(item, index);
+                }
+              }}
+            >
+              <motion.div
+                className={cardClassName(item, state)}
+                aria-label={getAriaLabel?.(item)}
+                role={onItemClick ? "button" : undefined}
+                tabIndex={onItemClick && distance <= 1 ? 0 : undefined}
+                style={{ opacity: isCenter ? 1 : sideCardOpacity }}
+              >
+                {renderCard(item, state)}
+              </motion.div>
+            </motion.div>
+          );
+        })}
+      </motion.div>
+
+      <motion.div className="home-carousel-chrome premium-carousel-chrome" style={chromeStyle}>
+        {items.length > 1 && (
+          <>
+            <button className="home-carousel-arrow home-carousel-arrow-left" type="button" aria-label={prevLabel} onClick={() => moveCarousel(-1)}>
+              {"‹"}
+            </button>
+            <button className="home-carousel-arrow home-carousel-arrow-right" type="button" aria-label={nextLabel} onClick={() => moveCarousel(1)}>
+              {"›"}
+            </button>
+          </>
+        )}
+
+        {items.length > 1 && (
+          <div className="carousel-controls home-carousel-dots premium-carousel-dots" aria-label={dotsLabel}>
+            <div className="carousel-dots">
+              {items.map((item, index) => (
+                <button
+                  className={`carousel-dot ${index === normalizedActiveIndex ? "active" : ""}`.trim()}
+                  key={getKey(item)}
+                  type="button"
+                  aria-label={getDotLabel?.(item, index) ?? `Go to item ${index + 1}`}
+                  onClick={() => goToItem(index)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {cta && <div className="hero-product-actions premium-carousel-actions">{cta}</div>}
+      </motion.div>
+    </div>
+  );
 }
 
 function getCurrentPage(): Page {
@@ -504,7 +731,7 @@ function HomePage({ navigate, onProductSelect }: { navigate: (path: string, scro
     <PageShell>
       <div className="home-cinematic">
         <ScrollSection className="hero-scroll-stage" height="200vh">
-          {({ progress }) => <HeroProductsScene progress={progress} onProductSelect={onProductSelect} />}
+          {({ progress }) => <HeroProductsScene progress={progress} navigate={navigate} onProductSelect={onProductSelect} />}
         </ScrollSection>
 
         <ScrollSection className="trading-scope-scene" label="03" title="Trading scope" height="185vh">
@@ -516,7 +743,7 @@ function HomePage({ navigate, onProductSelect }: { navigate: (path: string, scro
         </ScrollSection>
 
         <ScrollSection className="legal-information-scene" label="05" title="Company profile" height="190vh">
-          {({ progress }) => <LegalInformationScene progress={progress} />}
+          {({ progress }) => <LegalInformationScene progress={progress} navigate={navigate} />}
         </ScrollSection>
 
         <ScrollSection className="contact-inquiry-scene" label="06" title="Contact inquiry" height="170vh">
@@ -609,6 +836,7 @@ function AnimatedCards({
   cards,
   className = "",
   onCardClick,
+  carouselCta,
   startVisible = false,
   initialIndex = 0,
 }: {
@@ -616,38 +844,12 @@ function AnimatedCards({
   cards: AnimatedCardData[];
   className?: string;
   onCardClick?: (card: AnimatedCardData, index: number) => void;
+  carouselCta?: ReactNode;
   startVisible?: boolean;
   initialIndex?: number;
 }) {
   const opacity = useTransform(progress, startVisible ? [0, 0.9, 1] : [0, 0.16, 0.9, 1], startVisible ? [1, 1, 0] : [0, 1, 1, 0]);
   const y = useTransform(progress, startVisible ? [0, 0.86, 1] : [0, 0.22, 0.86, 1], startVisible ? [0, 0, 24] : [70, 0, 0, 24]);
-  const [activeIndex, setActiveIndex] = useState(initialIndex);
-
-  const loopIndex = (index: number) => {
-    if (cards.length === 0) return 0;
-    return ((index % cards.length) + cards.length) % cards.length;
-  };
-
-  const goToCard = (index: number) => {
-    setActiveIndex(loopIndex(index));
-  };
-
-  const moveCarousel = (direction: number) => {
-    setActiveIndex((current) => loopIndex(current + direction));
-  };
-
-  const getSignedOffset = (index: number) => {
-    if (cards.length === 0) return 0;
-    let offset = (index - activeIndex + cards.length) % cards.length;
-    if (offset > cards.length / 2) {
-      offset -= cards.length;
-    }
-    return offset;
-  };
-
-  useEffect(() => {
-    setActiveIndex(loopIndex(initialIndex));
-  }, [cards.length, initialIndex]);
 
   const renderCardContent = (card: AnimatedCardData) => {
     const productCard = "product" in card ? (card as ProductCardData) : null;
@@ -676,126 +878,57 @@ function AnimatedCards({
     );
   };
 
-  const renderCard = (card: AnimatedCardData, index: number, key: string) => (
-    <div className="carousel-slide" key={key}>
-      <div className="card-shadow-wrapper">
-        <AnimatedCard
-          index={index}
-          className={"product" in card ? "product-preview-card" : ""}
-          onClick={onCardClick ? () => onCardClick(card, index) : undefined}
-          ariaLabel={onCardClick ? `Open details for ${card.title}` : undefined}
-        >
-          {renderCardContent(card)}
-        </AnimatedCard>
-      </div>
-    </div>
+  const renderGridCard = (card: AnimatedCardData, index: number, key: string) => (
+    <AnimatedCard
+      index={index}
+      className={"product" in card ? "product-preview-card" : ""}
+      key={key}
+      onClick={onCardClick ? () => onCardClick(card, index) : undefined}
+      ariaLabel={onCardClick ? `Open details for ${card.title}` : undefined}
+    >
+      {renderCardContent(card)}
+    </AnimatedCard>
   );
 
   return (
     <motion.div className={`animated-cards ${className}`.trim()} style={{ opacity, y }}>
       <div className="animated-cards-grid">
-        {cards.map((card, index) => renderCard(card, index, `grid-${card.title}`))}
+        {cards.map((card, index) => renderGridCard(card, index, `grid-${card.title}`))}
       </div>
 
-      <div className="animated-cards-carousel">
-        {cards.length > 1 && (
-          <button className="carousel-side-arrow carousel-side-arrow-left" type="button" aria-label="Previous card" onClick={() => moveCarousel(-1)}>
-            {"‹"}
-          </button>
-        )}
+      <PremiumCarousel
+        items={cards}
+        getKey={(card) => card.title}
+        initialIndex={initialIndex}
+        className="animated-cards-premium-carousel"
+        dotsLabel="Card carousel controls"
+        prevLabel="Previous card"
+        nextLabel="Next card"
+        getAriaLabel={onCardClick ? (card) => "Open details for " + card.title : undefined}
+        getDotLabel={(_, index) => "Go to card " + (index + 1)}
+        onItemClick={onCardClick}
+        cardClassName={(card, state) =>
+          [
+            "animated-card",
+            "info-card",
+            "premium-carousel-card",
+            "product" in card ? "product-preview-card" : "",
+            onCardClick ? "is-clickable" : "",
+            state.isCenter ? "home-carousel-center-card" : "home-carousel-side-card",
+            state.isEdgePeek ? "home-carousel-edge-card" : "",
+            state.isEdgePeek ? "home-carousel-edge-card-" + state.side : "",
+          ]
+            .filter(Boolean)
+            .join(" ")
+        }
+        renderCard={(card) => renderCardContent(card)}
+        cta={carouselCta}
+      />
 
-        <div className="animated-cards-viewport">
-          <motion.div
-            className="animated-cards-track"
-            drag={cards.length > 1 ? "x" : false}
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.08}
-            onDragEnd={(_, info) => {
-              if (info.offset.x < -42 || info.velocity.x < -260) {
-                moveCarousel(1);
-              }
-              if (info.offset.x > 42 || info.velocity.x > 260) {
-                moveCarousel(-1);
-              }
-            }}
-          >
-            {cards.map((card, index) => {
-              const signedOffset = getSignedOffset(index);
-              const distance = Math.abs(signedOffset);
-              const side = signedOffset === 0 ? "center" : signedOffset < 0 ? "left" : "right";
-              const visibleDistance = Math.min(distance, 3);
-              const isEdgePeek = distance === 2;
-              const isVisible = distance <= 2;
-              return (
-                <motion.div
-                  className="carousel-slide"
-                  data-distance={visibleDistance}
-                  data-side={side}
-                  key={`carousel-${card.title}`}
-                  initial={false}
-                  animate={{
-                    x: `${signedOffset * 108 - 50}%`,
-                    opacity: isVisible ? (isEdgePeek ? 0.34 : 1) : 0,
-                    scale: isEdgePeek ? 0.965 : 1,
-                    filter: isEdgePeek ? "blur(1.4px)" : "blur(0px)",
-                  }}
-                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                  style={{
-                    zIndex: 10 - Math.min(distance, 9),
-                    pointerEvents: distance <= 1 ? "auto" : "none",
-                  }}
-                >
-                  <div className="card-shadow-wrapper">
-                    <AnimatedCard
-                      index={index}
-                      className={"product" in card ? "product-preview-card" : ""}
-                      onClick={onCardClick ? () => onCardClick(card, index) : undefined}
-                      ariaLabel={onCardClick ? `Open details for ${card.title}` : undefined}
-                    >
-                      {renderCardContent(card)}
-                    </AnimatedCard>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        </div>
-
-        {cards.length > 1 && (
-          <button className="carousel-side-arrow carousel-side-arrow-right" type="button" aria-label="Next card" onClick={() => moveCarousel(1)}>
-            {"›"}
-          </button>
-        )}
-
-        {cards.length > 1 && (
-          <div className="carousel-controls" aria-label="Card carousel controls">
-            <div className="carousel-dots">
-              {cards.map((card, index) => (
-                <button
-                  className={`carousel-dot ${index === activeIndex ? "active" : ""}`.trim()}
-                  key={card.title}
-                  type="button"
-                  aria-label={`Go to card ${index + 1}`}
-                  onClick={() => goToCard(index)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {cards.length > 1 && (
-        <div className="carousel-controls animated-cards-grid-controls" aria-label="Card carousel controls">
-          <div className="carousel-dots">
-            {cards.map((card, index) => (
-              <button
-                className={`carousel-dot ${index === activeIndex ? "active" : ""}`.trim()}
-                key={card.title}
-                type="button"
-                aria-label={`Go to card ${index + 1}`}
-                onClick={() => goToCard(index)}
-              />
-            ))}
+      {carouselCta && (
+        <div className="carousel-controls-stack animated-cards-grid-controls">
+          <div className="carousel-cta">
+            {carouselCta}
           </div>
         </div>
       )}
@@ -1087,25 +1220,17 @@ function ConceptTopbar({ navigate }: { navigate: (path: string, scrollTargetId?:
   );
 }
 
-function HeroProductsScene({ progress, onProductSelect }: { progress: MotionValue<number>; onProductSelect: (product: Product) => void }) {
+function HeroProductsScene({
+  progress,
+  navigate,
+  onProductSelect,
+}: {
+  progress: MotionValue<number>;
+  navigate: (path: string, scrollTargetId?: string) => void;
+  onProductSelect: (product: Product) => void;
+}) {
   const featuredProduct = products.find((product) => product.name === "Caprolactam") ?? products[0];
   const featuredProductIndex = Math.max(0, products.findIndex((product) => product.name === featuredProduct.name));
-  const [activeProductIndex, setActiveProductIndex] = useState(featuredProductIndex);
-  const loopProductIndex = (index: number) => ((index % products.length) + products.length) % products.length;
-  const activeProduct = products[loopProductIndex(activeProductIndex)];
-  const goToProduct = (index: number) => {
-    setActiveProductIndex(loopProductIndex(index));
-  };
-  const moveProductCarousel = (direction: number) => {
-    setActiveProductIndex((current) => loopProductIndex(current + direction));
-  };
-  const getSignedProductOffset = (index: number) => {
-    let offset = (index - loopProductIndex(activeProductIndex) + products.length) % products.length;
-    if (offset > products.length / 2) {
-      offset -= products.length;
-    }
-    return offset;
-  };
   const chemX = useTransform(progress, [0, 0.82], ["0vw", "-64vw"]);
   const bridgeX = useTransform(progress, [0, 0.82], ["0vw", "64vw"]);
   const wordOpacity = useTransform(progress, [0, 0.62], [1, 0]);
@@ -1122,14 +1247,14 @@ function HeroProductsScene({ progress, onProductSelect }: { progress: MotionValu
   const carouselChromeOpacity = useTransform(progress, [0.62, 0.84], [0, 1]);
   const carouselChromeY = useTransform(progress, [0.62, 0.84], [18, 0]);
 
-  const renderHeroProductCardContent = (product: Product) => (
+  const renderHeroProductCardContent = (product: Product, isCenter: boolean) => (
     <>
       <div>
         <strong>{product.name}</strong>
         <span>{getProductSubtitle(product)}</span>
       </div>
       <div className="concept-formula-box product-preview-media">
-        <img src={product.images[0].src} alt={product.images[0].alt} loading={product.name === activeProduct.name ? "eager" : "lazy"} />
+        <img src={product.images[0].src} alt={product.images[0].alt} loading={isCenter ? "eager" : "lazy"} />
       </div>
     </>
   );
@@ -1158,80 +1283,45 @@ function HeroProductsScene({ progress, onProductSelect }: { progress: MotionValu
         </motion.p>
       </motion.div>
 
-      <motion.div className="home-carousel-track-layer" style={{ x: cardX, y: cardY, scale: cardScale }}>
-        {products.map((product, index) => {
-          const signedOffset = getSignedProductOffset(index);
-          const distance = Math.abs(signedOffset);
-          const isCenter = distance === 0;
-          const isEdgePeek = distance === 2;
-          const isVisible = distance <= 2;
-          return (
-            <motion.div
-              className="home-carousel-track-item"
-              data-side={signedOffset < 0 ? "left" : "right"}
-              data-distance={Math.min(distance, 3)}
-              aria-hidden={!isVisible}
-              key={product.name}
-              initial={false}
-              animate={{
-                x: signedOffset * 410,
-                opacity: isVisible ? (isEdgePeek ? 0.28 : 1) : 0,
-                scale: isCenter ? 1 : isEdgePeek ? 0.94 : 0.98,
-                filter: isEdgePeek ? "blur(1.4px)" : "blur(0px)",
-              }}
-              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              style={{
-                zIndex: 8 - Math.min(distance, 6),
-                pointerEvents: distance <= 1 ? "auto" : "none",
-              }}
-              onClick={() => {
-                if (distance <= 1) onProductSelect(product);
-              }}
-              onKeyDown={(event) => {
-                if (distance > 1) return;
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  onProductSelect(product);
-                }
-              }}
-            >
-              <motion.div
-                className={`concept-card home-carousel-product-card ${isCenter ? "home-carousel-center-card" : "home-carousel-side-card"} ${
-                  isEdgePeek ? `home-carousel-edge-card home-carousel-edge-card-${signedOffset < 0 ? "left" : "right"}` : ""
-                }`.trim()}
-                aria-label={`Open details for ${product.name}`}
-                role="button"
-                tabIndex={distance <= 1 ? 0 : -1}
-                style={{ opacity: isCenter ? 1 : sideCardOpacity }}
-              >
-                {renderHeroProductCardContent(product)}
-              </motion.div>
-            </motion.div>
-          );
-        })}
-      </motion.div>
-
-      <motion.div className="home-carousel-chrome" style={{ opacity: carouselChromeOpacity, x: "-50%", y: carouselChromeY }}>
-        <button className="home-carousel-arrow home-carousel-arrow-left" type="button" aria-label="Previous product" onClick={() => moveProductCarousel(-1)}>
-          {"‹"}
-        </button>
-        <button className="home-carousel-arrow home-carousel-arrow-right" type="button" aria-label="Next product" onClick={() => moveProductCarousel(1)}>
-          {"›"}
-        </button>
-        <div className="carousel-controls home-carousel-dots" aria-label="Product carousel controls">
-          <div className="carousel-dots">
-            {products.map((product, index) => (
-              <button
-                className={`carousel-dot ${index === loopProductIndex(activeProductIndex) ? "active" : ""}`.trim()}
-                key={product.name}
-                type="button"
-                aria-label={`Go to ${product.name}`}
-                onClick={() => goToProduct(index)}
-              />
-            ))}
-          </div>
-        </div>
-      </motion.div>
+      <PremiumCarousel
+        items={products}
+        getKey={(product) => product.name}
+        initialIndex={featuredProductIndex}
+        mode="hero"
+        trackStyle={{ x: cardX, y: cardY, scale: cardScale }}
+        chromeStyle={{ opacity: carouselChromeOpacity, x: "-50%", y: carouselChromeY }}
+        sideCardOpacity={sideCardOpacity}
+        dotsLabel="Product carousel controls"
+        prevLabel="Previous product"
+        nextLabel="Next product"
+        getAriaLabel={(product) => "Open details for " + product.name}
+        getDotLabel={(product) => "Go to " + product.name}
+        onItemClick={onProductSelect}
+        cardClassName={(_, state) =>
+          [
+            "concept-card",
+            "home-carousel-product-card",
+            state.isCenter ? "home-carousel-center-card" : "home-carousel-side-card",
+            state.isEdgePeek ? "home-carousel-edge-card" : "",
+            state.isEdgePeek ? "home-carousel-edge-card-" + state.side : "",
+          ]
+            .filter(Boolean)
+            .join(" ")
+        }
+        renderCard={(product, state) => renderHeroProductCardContent(product, state.isCenter)}
+        cta={
+          <>
+            <button className="hero-product-button hero-product-button-primary" type="button" onClick={() => navigate("#/contact", "contact-form")}>
+              <span>Start an Inquiry</span>
+              <ArrowRight size={20} weight="bold" />
+            </button>
+            <button className="hero-product-button hero-product-button-secondary" type="button" onClick={() => navigate("#/about")}>
+              <span>View Company Details</span>
+              <ArrowRight size={20} weight="bold" />
+            </button>
+          </>
+        }
+      />
     </div>
   );
 }
@@ -1313,7 +1403,7 @@ function BusinessActivitiesScene({ progress }: { progress: MotionValue<number> }
   );
 }
 
-function LegalInformationScene({ progress }: { progress: MotionValue<number> }) {
+function LegalInformationScene({ progress, navigate }: { progress: MotionValue<number>; navigate: (path: string, scrollTargetId?: string) => void }) {
   const cards: AnimatedCardData[] = [
     { label: "Legal name", title: "PT NEXUS CHEM BRIDGE", text: "Indonesia-registered chemical trading and brokerage company." },
     { label: "NIB", title: "1603260067144", text: "Main business identification and license number." },
@@ -1330,7 +1420,17 @@ function LegalInformationScene({ progress }: { progress: MotionValue<number> }) 
       <AnimatedParagraph progress={progress}>
         Registration, tax, address, director, and ownership details are presented without burying the inquiry path.
       </AnimatedParagraph>
-      <AnimatedCards progress={progress} cards={cards} className="legal-cards" />
+      <AnimatedCards
+        progress={progress}
+        cards={cards}
+        className="legal-cards"
+        carouselCta={
+          <button className="secondary-button" type="button" onClick={() => navigate("#/about")}>
+            View Company Details
+            <ArrowRight size={18} weight="bold" />
+          </button>
+        }
+      />
     </div>
   );
 }
@@ -1573,12 +1673,29 @@ function AboutPage({ navigate }: { navigate: (path: string, scrollTargetId?: str
 }
 
 function ContactPage() {
+  const contactScrollRef = useRef<HTMLDivElement | null>(null);
+  const formSectionRef = useRef<HTMLElement | null>(null);
+  const { scrollYProgress } = useScroll({
+    target: contactScrollRef,
+    offset: ["start start", "end end"],
+  });
+  const progress = useSpring(scrollYProgress, {
+    stiffness: 76,
+    damping: 24,
+    mass: 0.56,
+  });
+
+  const scrollToForm = () => {
+    formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <PageShell>
       <div className="home-cinematic page-cinematic contact-page-cinematic">
-        <ScrollSection className="contact-form-scroll-scene" height="195vh">
-          {({ progress }) => <ContactFormScene progress={progress} />}
-        </ScrollSection>
+        <div className="contact-scroll-experience" ref={contactScrollRef}>
+          <ContactIntroScene progress={progress} onRequestQuote={scrollToForm} />
+          <ContactFormScene progress={progress} formRef={formSectionRef} />
+        </div>
       </div>
     </PageShell>
   );
@@ -1593,8 +1710,6 @@ function ProductsCatalogScene({
   navigate: (path: string, scrollTargetId?: string) => void;
   onProductSelect: (product: Product) => void;
 }) {
-  const ctaOpacity = useTransform(progress, [0, 0.82, 1], [1, 1, 0]);
-  const ctaY = useTransform(progress, [0, 0.82, 1], [0, 0, -32]);
   const productCards: ProductCardData[] = products.map((product) => ({
     label: product.previewLabel,
     title: product.name,
@@ -1606,7 +1721,8 @@ function ProductsCatalogScene({
     <div className="cinematic-scene card-cinematic-scene page-cinematic-scene">
       <span className="cinematic-label">Products</span>
       <AnimatedTitle progress={progress} startVisible>
-        Six starting categories for qualified chemical inquiries.
+        <span className="products-title-line">Six products for</span>
+        <span className="products-title-line">qualified chemical inquiries.</span>
       </AnimatedTitle>
       <AnimatedParagraph progress={progress} startVisible>
         Product names, grade, origin, packaging, availability, and documentation are confirmed through direct commercial inquiry.
@@ -1621,17 +1737,19 @@ function ProductsCatalogScene({
           }
         }}
         startVisible
+        carouselCta={
+          <>
+            <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
+              Request a Quote
+              <ArrowRight size={18} weight="bold" />
+            </button>
+            <button className="secondary-button" type="button" onClick={() => navigate("#/about")}>
+              View Company Details
+              <ArrowRight size={18} weight="bold" />
+            </button>
+          </>
+        }
       />
-      <motion.div className="cinematic-cta-row" style={{ opacity: ctaOpacity, y: ctaY }}>
-        <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
-          Request a Quote
-          <ArrowRight size={18} weight="bold" />
-        </button>
-        <button className="secondary-button" type="button" onClick={() => navigate("#/about")}>
-          View Company Details
-          <ArrowRight size={18} weight="bold" />
-        </button>
-      </motion.div>
     </div>
   );
 }
@@ -1641,7 +1759,7 @@ function ProductsInquiryScene({ progress, navigate }: { progress: MotionValue<nu
     {
       label: "01",
       title: "Product basics",
-      text: "Share category, grade target, volume range, and destination before pricing or documentation discussions begin.",
+      text: "Share product, grade target, volume range, and destination before pricing or documentation discussions begin.",
       icon: <CardIcon type="formula" />,
     },
     {
@@ -1657,9 +1775,6 @@ function ProductsInquiryScene({ progress, navigate }: { progress: MotionValue<nu
       icon: <CardIcon type="transport" />,
     },
   ];
-  const ctaOpacity = useTransform(progress, [0.2, 0.36, 0.82, 1], [0, 1, 1, 0]);
-  const ctaY = useTransform(progress, [0.2, 0.36, 0.82, 1], [30, 0, 0, -34]);
-
   return (
     <div className="cinematic-scene card-cinematic-scene page-cinematic-scene">
       <span className="cinematic-label">Inquiry path</span>
@@ -1667,13 +1782,17 @@ function ProductsInquiryScene({ progress, navigate }: { progress: MotionValue<nu
       <AnimatedParagraph progress={progress}>
         The website stays intentionally concise. Specific supply parameters are handled through the contact form instead of a generic catalog exchange.
       </AnimatedParagraph>
-      <AnimatedCards progress={progress} cards={cards} className="activity-cards page-process-cards" />
-      <motion.div className="cinematic-cta-row" style={{ opacity: ctaOpacity, y: ctaY }}>
-        <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
-          Discuss Supply
-          <ArrowRight size={18} weight="bold" />
-        </button>
-      </motion.div>
+      <AnimatedCards
+        progress={progress}
+        cards={cards}
+        className="activity-cards page-process-cards"
+        carouselCta={
+          <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
+            Discuss Supply
+            <ArrowRight size={18} weight="bold" />
+          </button>
+        }
+      />
     </div>
   );
 }
@@ -1699,9 +1818,6 @@ function AboutProfileScene({ progress, navigate }: { progress: MotionValue<numbe
       icon: <CardIcon type="registration" />,
     },
   ];
-  const ctaOpacity = useTransform(progress, [0, 0.82, 1], [1, 1, 0]);
-  const ctaY = useTransform(progress, [0, 0.82, 1], [0, 0, -32]);
-
   return (
     <div className="cinematic-scene card-cinematic-scene page-cinematic-scene">
       <span className="cinematic-label">About Us</span>
@@ -1709,13 +1825,18 @@ function AboutProfileScene({ progress, navigate }: { progress: MotionValue<numbe
       <AnimatedParagraph progress={progress} startVisible>
         The company profile is kept close to the inquiry path so buyers and suppliers can verify the business before opening a commercial discussion.
       </AnimatedParagraph>
-      <AnimatedCards progress={progress} cards={cards} className="legal-cards page-profile-cards" startVisible />
-      <motion.div className="cinematic-cta-row" style={{ opacity: ctaOpacity, y: ctaY }}>
-        <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
-          Contact Us
-          <ArrowRight size={18} weight="bold" />
-        </button>
-      </motion.div>
+      <AnimatedCards
+        progress={progress}
+        cards={cards}
+        className="legal-cards page-profile-cards"
+        startVisible
+        carouselCta={
+          <button className="primary-button" type="button" onClick={() => navigate("#/contact", "contact-form")}>
+            Contact Us
+            <ArrowRight size={18} weight="bold" />
+          </button>
+        }
+      />
     </div>
   );
 }
@@ -1727,8 +1848,6 @@ function AboutLegalScene({ progress, navigate }: { progress: MotionValue<number>
     text: label.includes("KBLI") ? "Registered business activity for wholesale and chemical product trade." : "Company verification detail for commercial counterparties.",
     icon: <CardIcon type={getLegalCardIconType(label)} />,
   }));
-  const ctaOpacity = useTransform(progress, [0.2, 0.36, 0.82, 1], [0, 1, 1, 0]);
-  const ctaY = useTransform(progress, [0.2, 0.36, 0.82, 1], [28, 0, 0, -32]);
 
   return (
     <div className="cinematic-scene card-cinematic-scene page-cinematic-scene">
@@ -1737,65 +1856,109 @@ function AboutLegalScene({ progress, navigate }: { progress: MotionValue<number>
       <AnimatedParagraph progress={progress}>
         Registration, tax, address, director, and business activity details are presented as separate liquid glass records.
       </AnimatedParagraph>
-      <AnimatedCards progress={progress} cards={legalCards} className="legal-cards page-legal-cards" />
-      <motion.div className="cinematic-cta-row" style={{ opacity: ctaOpacity, y: ctaY }}>
-        <button className="secondary-button" type="button" onClick={() => navigate("#/products")}>
-          View Product Categories
-          <ArrowRight size={18} weight="bold" />
-        </button>
-      </motion.div>
+      <AnimatedCards
+        progress={progress}
+        cards={legalCards}
+        className="legal-cards page-legal-cards"
+        carouselCta={
+          <button className="secondary-button" type="button" onClick={() => navigate("#/products")}>
+            View Products
+            <ArrowRight size={18} weight="bold" />
+          </button>
+        }
+      />
     </div>
   );
 }
 
-function ContactFormScene({ progress }: { progress: MotionValue<number> }) {
-  const contentOpacity = useTransform(progress, [0, 0.84, 1], [1, 1, 0]);
-  const contentY = useTransform(progress, [0, 0.84, 1], [0, 0, -64]);
+function ContactIntroScene({ progress, onRequestQuote }: { progress: MotionValue<number>; onRequestQuote: () => void }) {
+  const headingOpacity = useTransform(progress, [0, 0.28, 0.46], [1, 1, 0]);
+  const headingY = useTransform(progress, [0, 0.46], [0, -80]);
+  const subtitleOpacity = useTransform(progress, [0.06, 0.34, 0.52], [1, 1, 0]);
+  const subtitleY = useTransform(progress, [0.06, 0.52], [0, -50]);
+  const buttonOpacity = useTransform(progress, [0.12, 0.38, 0.56], [1, 1, 0]);
+  const buttonY = useTransform(progress, [0.12, 0.56], [0, -30]);
 
   return (
-    <div className="cinematic-scene contact-cinematic-scene contact-page-scene" id="contact-form">
-      <span className="cinematic-label">Contact Us</span>
-      <AnimatedTitle progress={progress} startVisible>Send a chemical supply or brokerage inquiry.</AnimatedTitle>
-      <AnimatedParagraph progress={progress} startVisible>
-        Share the product category, destination, volume range, and documentation needs so the team can start the right commercial discussion.
-      </AnimatedParagraph>
-      <motion.section className="contact-layout cinematic-contact-layout" style={{ opacity: contentOpacity, y: contentY }}>
-        <ContactForm />
-        <aside className="contact-card info-card">
-          <span>Company details</span>
-          <h2>PT NEXUS CHEM BRIDGE</h2>
-          <dl>
-            <div>
-              <dt>NIB</dt>
-              <dd>1603260067144</dd>
-            </div>
-            <div>
-              <dt>NPWP</dt>
-              <dd>1000000008827496</dd>
-            </div>
-            <div>
-              <dt>Address</dt>
-              <dd>Jalan Ratna No. 80, Tonja, Denpasar Utara, Kota Denpasar, Bali 80239, Indonesia</dd>
-            </div>
-          </dl>
-        </aside>
-      </motion.section>
-    </div>
+    <section className="contact-intro-scroll-section" aria-labelledby="contact-intro-title">
+      <div className="contact-intro-sticky">
+        <div className="cinematic-scene contact-intro-scene">
+          <motion.h1 className="contact-intro-title" id="contact-intro-title" style={{ opacity: headingOpacity, y: headingY }}>
+            Send a chemical supply or brokerage inquiry.
+          </motion.h1>
+          <motion.p className="contact-intro-subtitle" style={{ opacity: subtitleOpacity, y: subtitleY }}>
+            Share the product, destination, volume range, and documentation needs so the team can start the right commercial discussion.
+          </motion.p>
+          <motion.div className="contact-intro-actions" style={{ opacity: buttonOpacity, y: buttonY }}>
+            <button className="primary-button contact-request-button" type="button" onClick={onRequestQuote}>
+              Request a Quote
+              <ArrowRight size={18} weight="bold" />
+            </button>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ContactFormScene({ progress, formRef }: { progress: MotionValue<number>; formRef: RefObject<HTMLElement | null> }) {
+  const labelOpacity = useTransform(progress, [0.28, 0.4], [0, 1]);
+  const headingOpacity = useTransform(progress, [0.32, 0.46], [0, 1]);
+  const headingY = useTransform(progress, [0.32, 0.46], [80, 0]);
+  const helperOpacity = useTransform(progress, [0.36, 0.5], [0, 1]);
+  const helperY = useTransform(progress, [0.36, 0.5], [52, 0]);
+  const formOpacity = useTransform(progress, [0.38, 0.5], [0, 1]);
+  const formY = useTransform(progress, [0.38, 0.5], [100, 0]);
+  const formScale = useTransform(progress, [0.38, 0.5], [0.96, 1]);
+
+  return (
+    <section className="contact-form-scroll-section" id="contact-form" ref={formRef} aria-labelledby="contact-form-title">
+      <div className="cinematic-scene contact-form-cinematic-scene contact-page-scene">
+        <motion.span className="cinematic-label" style={{ opacity: labelOpacity }}>Fill in form</motion.span>
+        <motion.h2 className="contact-form-title" id="contact-form-title" style={{ opacity: headingOpacity, y: headingY }}>
+          Tell us what you need.
+        </motion.h2>
+        <motion.p className="contact-form-helper" style={{ opacity: helperOpacity, y: helperY }}>
+          Send the product, quantity, destination, and documentation requirements. We will review the inquiry and respond with the next commercial steps.
+        </motion.p>
+        <motion.div className="contact-form-stage" style={{ opacity: formOpacity, y: formY, scale: formScale }}>
+          <ContactForm />
+        </motion.div>
+      </div>
+    </section>
   );
 }
 
 function ContactForm() {
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedProduct, setSelectedProduct] = useState("");
 
   const productOptions = useMemo(() => products.map((product) => product.name), []);
+  const formVariants = {
+    hidden: {},
+    show: {
+      transition: {
+        staggerChildren: 0.055,
+        delayChildren: 0.12,
+      },
+    },
+  };
+  const fieldVariants = {
+    hidden: { opacity: 0, y: 16 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.44, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+    },
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const nextErrors: Record<string, string> = {};
 
-    ["name", "company", "email", "message"].forEach((field) => {
+    ["name", "company", "email", "product", "destination", "volume", "message"].forEach((field) => {
       if (!String(formData.get(field) || "").trim()) {
         nextErrors[field] = "This field is required.";
       }
@@ -1811,42 +1974,46 @@ function ContactForm() {
   };
 
   return (
-    <form className="contact-form liquid-form" onSubmit={handleSubmit} noValidate>
+    <motion.form
+      className="contact-form liquid-form"
+      onSubmit={handleSubmit}
+      noValidate
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, amount: 0.3 }}
+      variants={formVariants}
+    >
       <div className="form-grid">
-        <Field label="Name" name="name" error={errors.name}>
+        <Field label="Name" name="name" error={errors.name} variants={fieldVariants}>
           <input id="name" name="name" autoComplete="name" placeholder="Your full name" />
         </Field>
-        <Field label="Company" name="company" error={errors.company}>
+        <Field label="Company" name="company" error={errors.company} variants={fieldVariants}>
           <input id="company" name="company" autoComplete="organization" placeholder="Company name" />
         </Field>
       </div>
-      <Field label="Business email" name="email" error={errors.email}>
+      <Field label="Email" name="email" error={errors.email} variants={fieldVariants}>
         <input id="email" name="email" type="email" autoComplete="email" placeholder="name@company.com" />
       </Field>
       <div className="form-grid">
-        <Field label="Product interest" name="product">
-          <select id="product" name="product" defaultValue="">
-            <option value="" disabled>
-              Select a category
-            </option>
-            {productOptions.map((option) => (
-              <option value={option} key={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+        <Field label="Product of interest" name="product" error={errors.product} variants={fieldVariants}>
+          <ProductInterestDropdown
+            id="product"
+            name="product"
+            options={productOptions}
+            value={selectedProduct}
+            onChange={setSelectedProduct}
+            hasError={Boolean(errors.product)}
+          />
         </Field>
-        <Field label="Inquiry type" name="inquiry">
-          <select id="inquiry" name="inquiry" defaultValue="Supply inquiry">
-            <option>Supply inquiry</option>
-            <option>Brokerage discussion</option>
-            <option>Supplier introduction</option>
-            <option>Documentation request</option>
-          </select>
+        <Field label="Destination / market" name="destination" error={errors.destination} variants={fieldVariants}>
+          <input id="destination" name="destination" autoComplete="country-name" placeholder="Destination country or market" />
         </Field>
       </div>
-      <Field label="Message" name="message" error={errors.message} helper="Include volume range, destination, grade, packaging, and timing if known.">
-        <textarea id="message" name="message" rows={6} placeholder="Tell us what you are looking for." />
+      <Field label="Volume range" name="volume" error={errors.volume} variants={fieldVariants}>
+        <input id="volume" name="volume" placeholder="Estimated quantity or shipment range" />
+      </Field>
+      <Field label="Message / inquiry details" name="message" error={errors.message} helper="Include grade, packaging, timing, documentation, and any counterparties if known." variants={fieldVariants}>
+        <textarea id="message" name="message" rows={6} placeholder="Tell us what you need." />
       </Field>
       {submitted && (
         <div className="success-state" role="status">
@@ -1854,11 +2021,11 @@ function ContactForm() {
           <span>Inquiry details are ready. Connect this form to your email or CRM before launch.</span>
         </div>
       )}
-      <button className="primary-button form-submit" type="submit">
-        Submit Inquiry
+      <motion.button className="primary-button form-submit" type="submit" variants={fieldVariants}>
+        Send Inquiry
         <ArrowRight size={18} weight="bold" />
-      </button>
-    </form>
+      </motion.button>
+    </motion.form>
   );
 }
 
@@ -1867,20 +2034,183 @@ function Field({
   name,
   error,
   helper,
+  variants,
   children,
 }: {
   label: string;
   name: string;
   error?: string;
   helper?: string;
+  variants?: Variants;
   children: ReactNode;
 }) {
   return (
-    <div className="field">
-      <label htmlFor={name}>{label}</label>
+    <motion.div className="field" variants={variants}>
+      <label htmlFor={name} id={`${name}-label`}>{label}</label>
       {children}
       {helper && <p className="helper-text">{helper}</p>}
       {error && <p className="error-text">{error}</p>}
+    </motion.div>
+  );
+}
+
+function ProductInterestDropdown({
+  id,
+  name,
+  options,
+  value,
+  onChange,
+  hasError = false,
+}: {
+  id: string;
+  name: string;
+  options: string[];
+  value: string;
+  onChange: (value: string) => void;
+  hasError?: boolean;
+}) {
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(() => Math.max(options.indexOf(value), 0));
+  const selectedIndex = options.indexOf(value);
+  const menuId = `${id}-menu`;
+  const buttonId = `${id}-button`;
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!dropdownRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    }
+  }, [isOpen, selectedIndex]);
+
+  const selectOption = (option: string) => {
+    onChange(option);
+    setIsOpen(false);
+  };
+
+  const moveHighlight = (direction: number) => {
+    setHighlightedIndex((current) => {
+      const nextIndex = (current + direction + options.length) % options.length;
+      return nextIndex;
+    });
+  };
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (!isOpen) {
+        setIsOpen(true);
+        return;
+      }
+      moveHighlight(1);
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!isOpen) {
+        setIsOpen(true);
+        return;
+      }
+      moveHighlight(-1);
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      if (!isOpen) {
+        setIsOpen(true);
+        return;
+      }
+      const highlightedOption = options[highlightedIndex];
+      if (highlightedOption) {
+        selectOption(highlightedOption);
+      }
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setIsOpen(false);
+    }
+  };
+
+  return (
+    <div className={`product-dropdown ${isOpen ? "is-open" : ""} ${hasError ? "has-error" : ""}`.trim()} ref={dropdownRef}>
+      <input id={id} name={name} type="hidden" value={value} />
+      <button
+        className="product-dropdown-control"
+        id={buttonId}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls={menuId}
+        aria-labelledby={`${id}-label ${buttonId}`}
+        onClick={() => setIsOpen((current) => !current)}
+        onKeyDown={handleKeyDown}
+      >
+        <span className={value ? "product-dropdown-value" : "product-dropdown-placeholder"}>
+          {value || "Select a product"}
+        </span>
+        <ChevronDown className="product-dropdown-chevron" size={18} strokeWidth={1.8} aria-hidden="true" />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="product-dropdown-menu"
+            id={menuId}
+            role="listbox"
+            aria-labelledby={`${id}-label`}
+            initial={{ opacity: 0, y: -8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {options.map((option, index) => {
+              const isSelected = option === value;
+              const isHighlighted = index === highlightedIndex;
+              return (
+                <button
+                  className={`product-dropdown-option ${isSelected ? "is-selected" : ""} ${isHighlighted ? "is-highlighted" : ""}`.trim()}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  key={option}
+                  onClick={() => selectOption(option)}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    selectOption(option);
+                  }}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                >
+                  <span>{option}</span>
+                  {isSelected && <Check size={15} weight="bold" aria-hidden="true" />}
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
