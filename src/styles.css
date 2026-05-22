@@ -3746,7 +3746,12 @@ a:focus-visible {
     --mobile-nav-top: max(14px, env(safe-area-inset-top));
     --mobile-nav-height: 68px;
     --mobile-nav-clearance: calc(var(--mobile-nav-top) + var(--mobile-nav-height) + 30px);
-    --mobile-section-bottom: max(34px, calc(env(safe-area-inset-bottom) + 26px));
+    /* iOS Safari floats a ~80px URL-bar pill OVER the page that is NOT
+       counted in env(safe-area-inset-bottom). Reserve extra room so cards
+       never sit under it. The 96px constant accounts for the URL bar +
+       breathing space, plus we still add the home-indicator inset. */
+    --mobile-url-bar-overlay: 96px;
+    --mobile-section-bottom: calc(env(safe-area-inset-bottom) + var(--mobile-url-bar-overlay));
     --premium-carousel-item-offset: 74vw;
   }
 
@@ -4388,7 +4393,7 @@ a:focus-visible {
     width: calc(100vw - 32px);
     grid-template-columns: 1fr;
     gap: 18px;
-    padding-bottom: max(34px, calc(env(safe-area-inset-bottom) + 28px));
+    padding-bottom: var(--mobile-section-bottom);
   }
 
   .footer-links {
