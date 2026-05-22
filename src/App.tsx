@@ -865,7 +865,7 @@ function getLegalCardIconType(label: string): CardIconType {
 function HomePage({ navigate, onProductSelect }: { navigate: (path: string, scrollTargetId?: string) => void; onProductSelect: (product: Product) => void }) {
   return (
     <PageShell>
-      <div className="home-cinematic">
+      <div className="home-cinematic page-cinematic home-page-cinematic">
         <ScrollSection className="hero-scroll-stage" height="200vh">
           {({ progress }) => <HeroProductsScene progress={progress} navigate={navigate} onProductSelect={onProductSelect} />}
         </ScrollSection>
@@ -1542,7 +1542,7 @@ function TradingScopeScene({ progress }: { progress: MotionValue<number> }) {
   ];
 
   return (
-    <div className="cinematic-scene split-cinematic-scene">
+    <div className="cinematic-scene split-cinematic-scene page-cinematic-scene">
       <motion.div className="cinematic-index" style={{ opacity: useTransform(progress, [0, 0.12, 0.82, 1], [0, 1, 1, 0]) }}>
         <span>03</span>
         <p>Trading scope</p>
@@ -1588,7 +1588,7 @@ function BusinessActivitiesScene({ progress }: { progress: MotionValue<number> }
   ];
 
   return (
-    <div className="cinematic-scene card-cinematic-scene">
+    <div className="cinematic-scene card-cinematic-scene page-cinematic-scene">
       <span className="cinematic-label">04</span>
       <AnimatedTitle progress={progress}>Business activities are stated clearly before the first inquiry.</AnimatedTitle>
       <AnimatedParagraph progress={progress}>
@@ -1610,7 +1610,7 @@ function LegalInformationScene({ progress, navigate }: { progress: MotionValue<n
   ];
 
   return (
-    <div className="cinematic-scene legal-cinematic-scene">
+    <div className="cinematic-scene legal-cinematic-scene page-cinematic-scene">
       <span className="cinematic-label">05</span>
       <AnimatedTitle progress={progress}>Company information stays visible, simple, and verifiable.</AnimatedTitle>
       <AnimatedParagraph progress={progress}>
@@ -1636,7 +1636,7 @@ function ContactInquiryScene({ progress, navigate }: { progress: MotionValue<num
   const buttonY = useTransform(progress, [0.24, 0.5, 0.86, 1], [52, 0, 0, -48]);
 
   return (
-    <div className="cinematic-scene contact-cinematic-scene">
+    <div className="cinematic-scene contact-cinematic-scene page-cinematic-scene">
       <span className="cinematic-label">06</span>
       <AnimatedTitle progress={progress}>Start with product, volume, destination, and documents.</AnimatedTitle>
       <AnimatedParagraph progress={progress}>

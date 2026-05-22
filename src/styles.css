@@ -1016,7 +1016,11 @@ img {
 
 .shared-helix-entrance {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100lvh;
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
@@ -3141,11 +3145,6 @@ a:focus-visible {
   max-width: 38ch;
 }
 
-.contact-page-cinematic {
-  min-height: 220svh;
-  min-height: 220dvh;
-}
-
 .contact-scroll-experience {
   position: relative;
   min-height: 220svh;
@@ -4281,7 +4280,6 @@ a:focus-visible {
     padding: 0 18px;
   }
 
-  .contact-page-cinematic,
   .contact-scroll-experience {
     min-height: 260dvh;
   }
@@ -4323,7 +4321,9 @@ a:focus-visible {
     align-items: flex-start;
     height: auto;
     min-height: 150dvh;
-    padding: var(--mobile-nav-clearance) 0 var(--mobile-readable-bottom-buffer);
+    padding-top: var(--mobile-nav-clearance);
+    padding-right: 0;
+    padding-left: 0;
     scroll-margin-top: 0;
   }
 
