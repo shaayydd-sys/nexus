@@ -14,13 +14,16 @@ import {
   BriefcaseBusiness,
   Boxes,
   ChevronDown,
+  Clock,
   FileCheck,
   FileText as LucideFileText,
   FlaskConical,
   Globe2,
+  Mail,
   MapPin as LucideMapPin,
   Package,
   PackageCheck,
+  Phone,
   ReceiptText,
   Truck,
   UserRound,
@@ -1016,7 +1019,6 @@ function AnimatedCards({
   cards,
   className = "",
   onCardClick,
-  onProductInquiry,
   carouselCta,
   startVisible = false,
   initialIndex = 0,
@@ -1025,7 +1027,6 @@ function AnimatedCards({
   cards: AnimatedCardData[];
   className?: string;
   onCardClick?: (card: AnimatedCardData, index: number) => void;
-  onProductInquiry?: (product: Product) => void;
   carouselCta?: ReactNode;
   startVisible?: boolean;
   initialIndex?: number;
@@ -1053,9 +1054,6 @@ function AnimatedCards({
           <div className="product-preview-media">
             <img src={productCard.product.images[0].src} alt={productCard.product.images[0].alt} loading="lazy" />
           </div>
-          {onProductInquiry && (
-            <ProductInquiryButton productName={productCard.product.name} onClick={() => onProductInquiry(productCard.product)} />
-          )}
         </div>
       );
     }
@@ -1507,7 +1505,6 @@ function HeroProductsScene({
       <div className="concept-formula-box product-preview-media">
         <img src={product.images[0].src} alt={product.images[0].alt} loading={isCenter ? "eager" : "lazy"} />
       </div>
-      <ProductInquiryButton productName={product.name} onClick={() => navigate("#/contact", "contact-form")} />
     </>
   );
 
@@ -1950,6 +1947,7 @@ function ContactPage() {
       <div className="home-cinematic page-cinematic contact-page-cinematic">
         <div className="contact-scroll-experience" ref={contactScrollRef}>
           <ContactIntroScene progress={progress} onRequestQuote={scrollToForm} />
+          <ContactDetailsScene progress={progress} />
           <ContactFormScene progress={progress} formRef={formSectionRef} />
         </div>
       </div>
@@ -2002,7 +2000,6 @@ function ProductsCatalogScene({
               onProductSelect((card as ProductCardData).product);
             }
           }}
-          onProductInquiry={() => navigate("#/contact", "contact-form")}
           startVisible
           carouselCta={
             <>
@@ -2150,6 +2147,43 @@ function AboutLegalScene({ progress, navigate }: { progress: MotionValue<number>
   );
 }
 
+type ContactDetailValue = {
+  text: string;
+  href?: string;
+};
+
+type ContactDetailItem = {
+  label: string;
+  icon: ReactNode;
+  values: ContactDetailValue[];
+};
+
+const contactDetailItems: ContactDetailItem[] = [
+  {
+    label: "Emails",
+    icon: <Mail size={20} strokeWidth={1.6} />,
+    values: [
+      { text: "info@nexuschembridge.com", href: "mailto:info@nexuschembridge.com" },
+      { text: "sabmd@nexuschembridge.com", href: "mailto:sabmd@nexuschembridge.com" },
+    ],
+  },
+  {
+    label: "Phone",
+    icon: <Phone size={20} strokeWidth={1.6} />,
+    values: [{ text: "+62-857-2550-4483", href: "tel:+6285725504483" }],
+  },
+  {
+    label: "Address",
+    icon: <LucideMapPin size={20} strokeWidth={1.6} />,
+    values: [{ text: "Jalan Ratna No. 80, Tonja, Denpasar Utara, Kota Denpasar, Bali 80239, Indonesia" }],
+  },
+  {
+    label: "Working hours",
+    icon: <Clock size={20} strokeWidth={1.6} />,
+    values: [{ text: "Mon – Fri" }, { text: "09:00 – 18:00" }],
+  },
+];
+
 function ContactIntroScene({ progress, onRequestQuote }: { progress: MotionValue<number>; onRequestQuote: () => void }) {
   const headingOpacity = useTransform(progress, [0, 0.28, 0.46], [1, 1, 0]);
   const headingY = useTransform(progress, [0, 0.46], [0, -80]);
@@ -2191,15 +2225,92 @@ function ContactIntroScene({ progress, onRequestQuote }: { progress: MotionValue
   );
 }
 
+function ContactDetailsScene({ progress }: { progress: MotionValue<number> }) {
+  const labelOpacity = useTransform(progress, [0.24, 0.34], [0, 1]);
+  const labelY = useTransform(progress, [0.24, 0.34], [24, 0]);
+  const headingOpacity = useTransform(progress, [0.28, 0.42], [0, 1]);
+  const headingY = useTransform(progress, [0.28, 0.42], [72, 0]);
+  const helperOpacity = useTransform(progress, [0.32, 0.46], [0, 1]);
+  const helperY = useTransform(progress, [0.32, 0.46], [48, 0]);
+  const cardsOpacity = useTransform(progress, [0.36, 0.52], [0, 1]);
+  const cardsY = useTransform(progress, [0.36, 0.52], [82, 0]);
+  const cardsScale = useTransform(progress, [0.36, 0.52], [0.98, 1]);
+
+  const listVariants: Variants = {
+    hidden: {},
+    show: {
+      transition: {
+        staggerChildren: 0.085,
+        delayChildren: 0.05,
+      },
+    },
+  };
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 24, scale: 0.98 },
+    show: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: { duration: 0.62, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+    },
+  };
+
+  return (
+    <section className="contact-details-scroll-section" aria-labelledby="contact-details-title">
+      <div className="cinematic-scene contact-details-cinematic-scene contact-page-scene">
+        <motion.span className="cinematic-label" style={{ opacity: labelOpacity, y: labelY }}>
+          Contact information
+        </motion.span>
+        <motion.h2 className="contact-details-heading" id="contact-details-title" style={{ opacity: headingOpacity, y: headingY }}>
+          Direct contact details.
+        </motion.h2>
+        <motion.p className="contact-details-helper" style={{ opacity: helperOpacity, y: helperY }}>
+          Reach the team directly for chemical supply, brokerage, documentation, and counterparty verification discussions.
+        </motion.p>
+        <motion.div
+          className="contact-details-grid"
+          style={{ opacity: cardsOpacity, y: cardsY, scale: cardsScale }}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.24 }}
+          variants={listVariants}
+        >
+          {contactDetailItems.map((item) => (
+            <motion.article className="contact-details-card" key={item.label} variants={itemVariants}>
+              <div className="contact-details-card-top">
+                <span className="contact-details-icon" aria-hidden="true">{item.icon}</span>
+                <span className="contact-details-card-label">{item.label}</span>
+              </div>
+              <div className="contact-details-card-values">
+                {item.values.map((value) => (
+                  value.href ? (
+                    <a className="contact-details-link" href={value.href} key={value.text}>
+                      {value.text}
+                    </a>
+                  ) : (
+                    <span className="contact-details-text" key={value.text}>
+                      {value.text}
+                    </span>
+                  )
+                ))}
+              </div>
+            </motion.article>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 function ContactFormScene({ progress, formRef }: { progress: MotionValue<number>; formRef: RefObject<HTMLElement | null> }) {
-  const labelOpacity = useTransform(progress, [0.28, 0.4], [0, 1]);
-  const headingOpacity = useTransform(progress, [0.32, 0.46], [0, 1]);
-  const headingY = useTransform(progress, [0.32, 0.46], [80, 0]);
-  const helperOpacity = useTransform(progress, [0.36, 0.5], [0, 1]);
-  const helperY = useTransform(progress, [0.36, 0.5], [52, 0]);
-  const formOpacity = useTransform(progress, [0.38, 0.5], [0, 1]);
-  const formY = useTransform(progress, [0.38, 0.5], [100, 0]);
-  const formScale = useTransform(progress, [0.38, 0.5], [0.96, 1]);
+  const labelOpacity = useTransform(progress, [0.58, 0.68], [0, 1]);
+  const headingOpacity = useTransform(progress, [0.62, 0.74], [0, 1]);
+  const headingY = useTransform(progress, [0.62, 0.74], [80, 0]);
+  const helperOpacity = useTransform(progress, [0.66, 0.78], [0, 1]);
+  const helperY = useTransform(progress, [0.66, 0.78], [52, 0]);
+  const formOpacity = useTransform(progress, [0.68, 0.82], [0, 1]);
+  const formY = useTransform(progress, [0.68, 0.82], [100, 0]);
+  const formScale = useTransform(progress, [0.68, 0.82], [0.96, 1]);
 
   return (
     <section className="contact-form-scroll-section" id="contact-form" ref={formRef} aria-labelledby="contact-form-title">
