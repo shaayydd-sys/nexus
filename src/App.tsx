@@ -32,8 +32,11 @@ import ureaCarbamideImage from "./assets/products/urea-carbamide-photo.jpeg";
 import caprolactamImage from "./assets/products/caprolactam-photo.jpeg";
 import ammoniumNitrateImage from "./assets/products/ammonium-nitrate-photo.jpeg";
 import ammoniumSulphateImage from "./assets/products/ammonium-sulphate-photo.jpeg";
+import { detectDeviceTier, type DeviceTier } from "./utils/device-capability";
 
 type Page = "home" | "products" | "about" | "contact";
+
+const DEVICE_TIER = detectDeviceTier();
 
 type NavItem = {
   label: string;
@@ -626,7 +629,11 @@ function App() {
   return (
     <>
       <MotionRuntime page={page} />
-      <SharedHelixBackground page={page} />
+      {DEVICE_TIER === "low" ? (
+        <div className="shared-helix-entrance shared-helix-fallback" aria-hidden="true" />
+      ) : (
+        <SharedHelixBackground page={page} tier={DEVICE_TIER} />
+      )}
       <ConceptTopbar navigate={navigate} page={page} />
       <main className="home-main">
         {page === "home" && <HomePage navigate={navigate} onProductSelect={setSelectedProduct} />}
@@ -1287,7 +1294,7 @@ function ProductDetailModal({ product, onClose }: { product: Product | null; onC
   );
 }
 
-function SharedHelixBackground({ page }: { page: Page }) {
+function SharedHelixBackground({ page, tier }: { page: Page; tier: DeviceTier }) {
   return (
     <motion.div
       className="shared-helix-entrance"
@@ -1297,7 +1304,7 @@ function SharedHelixBackground({ page }: { page: Page }) {
       transition={{ duration: 1.2, ease: cinematicEase }}
       aria-hidden="true"
     >
-      <HeroHelixScene className="page-helix-scene shared-helix-background" />
+      <HeroHelixScene className="page-helix-scene shared-helix-background" tier={tier} />
     </motion.div>
   );
 }
@@ -1672,7 +1679,7 @@ function ContactInquiryScene({ progress, navigate }: { progress: MotionValue<num
   );
 }
 
-function HeroHelixScene({ className = "concept-helix-scene" }: { className?: string }) {
+function HeroHelixScene({ className = "concept-helix-scene", tier = "high" }: { className?: string; tier?: DeviceTier }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -1691,8 +1698,8 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
       powerPreference: "high-performance",
     });
     renderer.setClearColor(0xf8f6f1, 1);
-    const isMobileViewport = () => window.matchMedia("(max-width: 768px)").matches;
-    const getPixelRatio = () => Math.min(window.devicePixelRatio || 1, isMobileViewport() ? 1.5 : 1.8);
+    const isMediumTier = tier === "medium";
+    const getPixelRatio = () => Math.min(window.devicePixelRatio || 1, isMediumTier ? 1.5 : 1.8);
     renderer.setPixelRatio(getPixelRatio());
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1707,7 +1714,7 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.12);
     keyLight.position.set(-2.6, 4.4, 4.8);
     keyLight.castShadow = true;
-    const shadowMapSize = isMobileViewport() ? 1024 : 2048;
+    const shadowMapSize = isMediumTier ? 1024 : 2048;
     keyLight.shadow.mapSize.set(shadowMapSize, shadowMapSize);
     keyLight.shadow.camera.near = 0.5;
     keyLight.shadow.camera.far = 14;
@@ -1842,7 +1849,7 @@ function HeroHelixScene({ className = "concept-helix-scene" }: { className?: str
       ribMaterials.forEach((material) => material.dispose());
       renderer.dispose();
     };
-  }, []);
+  }, [tier]);
 
   return <div className={className} ref={mountRef} aria-hidden="true" />;
 }

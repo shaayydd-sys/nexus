@@ -1028,6 +1028,10 @@ img {
   will-change: opacity, transform;
 }
 
+.shared-helix-fallback {
+  background: var(--site-bg);
+}
+
 .shared-helix-entrance .page-helix-scene {
   position: absolute;
 }
