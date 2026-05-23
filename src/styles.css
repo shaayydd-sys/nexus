@@ -3967,7 +3967,11 @@ a:focus-visible {
   }
 
   .cinematic-index {
+    width: 100%;
+    align-self: flex-start;
+    justify-content: flex-start;
     margin-bottom: 18px;
+    text-align: left;
   }
 
   .animated-cards {
@@ -4174,7 +4178,7 @@ a:focus-visible {
   }
 
   .concept-title {
-    top: calc(var(--mobile-nav-clearance) + 42px);
+    top: calc(var(--mobile-nav-clearance) + 106px);
   }
 
   .concept-word-left {
@@ -4183,7 +4187,7 @@ a:focus-visible {
   }
 
   .concept-word-right {
-    top: calc(var(--mobile-nav-clearance) + 284px);
+    top: calc(var(--mobile-nav-clearance) + 314px);
     right: 20px;
   }
 
@@ -4207,7 +4211,7 @@ a:focus-visible {
   }
 
   .home-carousel-track-layer {
-    top: 60dvh;
+    top: 68dvh;
     width: 82vw;
     min-height: 232px;
   }
@@ -4234,7 +4238,7 @@ a:focus-visible {
   }
 
   .home-carousel-chrome {
-    top: 60dvh;
+    top: 68dvh;
     width: 100vw;
   }
 

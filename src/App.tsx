@@ -1304,6 +1304,7 @@ function SharedHelixBackground({ page }: { page: Page }) {
 
 function ConceptTopbar({ navigate, page }: { navigate: (path: string, scrollTargetId?: string) => void; page: Page }) {
   const [isConceptMenuOpen, setIsConceptMenuOpen] = useState(false);
+  const shouldUseHoverMenu = () => window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
   const handleLogoClick = () => {
     setIsConceptMenuOpen(false);
@@ -1320,10 +1321,23 @@ function ConceptTopbar({ navigate, page }: { navigate: (path: string, scrollTarg
       key={`topbar-${page}`}
       aria-label="Hero navigation"
       initial={{ opacity: 0, y: -24 }}
-      onMouseEnter={() => setIsConceptMenuOpen(true)}
-      onMouseLeave={() => setIsConceptMenuOpen(false)}
-      onFocus={() => setIsConceptMenuOpen(true)}
+      onMouseEnter={() => {
+        if (shouldUseHoverMenu()) {
+          setIsConceptMenuOpen(true);
+        }
+      }}
+      onMouseLeave={() => {
+        if (shouldUseHoverMenu()) {
+          setIsConceptMenuOpen(false);
+        }
+      }}
+      onFocus={() => {
+        if (shouldUseHoverMenu()) {
+          setIsConceptMenuOpen(true);
+        }
+      }}
       onBlur={(event) => {
+        if (!shouldUseHoverMenu()) return;
         const nextFocus = event.relatedTarget as Node | null;
         if (!event.currentTarget.contains(nextFocus)) {
           setIsConceptMenuOpen(false);
@@ -1353,7 +1367,9 @@ function ConceptTopbar({ navigate, page }: { navigate: (path: string, scrollTarg
           aria-expanded={isConceptMenuOpen}
           onClick={(event) => {
             event.preventDefault();
-            if (window.matchMedia("(pointer: coarse)").matches) {
+            if (shouldUseHoverMenu()) {
+              setIsConceptMenuOpen(true);
+            } else {
               setIsConceptMenuOpen((value) => !value);
             }
           }}
