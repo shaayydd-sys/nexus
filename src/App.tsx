@@ -1223,6 +1223,7 @@ function ProductDetailModal({ product, onClose }: { product: Product | null; onC
         >
           <motion.article
             className="product-detail-panel product-detail-scroll info-card"
+            data-lenis-prevent=""
             role="dialog"
             aria-modal="true"
             aria-labelledby="product-detail-title"

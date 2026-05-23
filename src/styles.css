@@ -4453,6 +4453,16 @@ a:focus-visible {
   .footer-links {
     justify-content: flex-start;
   }
+
+  /* Modal scroll fix — must override .info-card { overflow: hidden } */
+  .product-detail-panel.product-detail-scroll {
+    height: min(820px, calc(100dvh - max(32px, env(safe-area-inset-top) + env(safe-area-inset-bottom) + 28px)));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 @supports not (height: 100lvh) {
