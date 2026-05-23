@@ -826,6 +826,10 @@ img {
   will-change: opacity;
 }
 
+.home-carousel-product-card .concept-formula-box {
+  height: 132px;
+}
+
 .home-carousel-side-card {
   z-index: 5;
 }
@@ -842,7 +846,7 @@ img {
 }
 
 .home-carousel-side-card .concept-formula-box {
-  height: 162px;
+  height: 132px;
 }
 
 .home-carousel-side-card-left,
@@ -1566,6 +1570,68 @@ img {
   filter: saturate(0.86) contrast(1.02);
 }
 
+.product-card-inquiry-button {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  width: fit-content;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 0 18px;
+  color: #ffffff;
+  background: #050505;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  font: 400 0.82rem/1 "Inter", system-ui, sans-serif;
+  letter-spacing: 0;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.32s ease,
+    box-shadow 0.32s ease;
+}
+
+.product-card-inquiry-button span {
+  display: inline;
+  margin: 0;
+  color: inherit !important;
+  font: inherit;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.product-card-inquiry-button svg {
+  flex: 0 0 auto;
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .product-card-inquiry-button:hover {
+    transform: translateY(-2px);
+    background: #111111;
+    box-shadow:
+      0 20px 46px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  }
+
+  .product-card-inquiry-button:hover svg {
+    transform: translateX(3px);
+  }
+}
+
+.product-card-inquiry-button:active {
+  transform: scale(0.98);
+}
+
 .product-preview-media::after {
   content: "";
   position: absolute;
@@ -1814,6 +1880,12 @@ img {
   border-radius: 999px;
   font-size: 0.82rem;
   font-weight: 300;
+}
+
+.product-detail-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 28px;
 }
 
 .split-cinematic-scene {
@@ -3406,6 +3478,8 @@ a:focus-visible {
     inset 0 -1px 0 rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(26px) saturate(165%);
   -webkit-backdrop-filter: blur(26px) saturate(165%);
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   transform-origin: top center;
 }
 
@@ -3428,6 +3502,7 @@ a:focus-visible {
   line-height: 1.2;
   letter-spacing: 0;
   text-align: left;
+  touch-action: pan-y;
   cursor: pointer;
   transition:
     color 0.18s ease,
@@ -4401,8 +4476,11 @@ a:focus-visible {
 
   .product-dropdown-menu {
     max-height: min(176px, 32dvh);
+    overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
   }
 
   .product-detail-overlay {

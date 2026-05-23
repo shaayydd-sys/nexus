@@ -642,7 +642,14 @@ function App() {
         {page === "contact" && <ContactPage />}
       </main>
       <Footer navigate={navigate} />
-      <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+      <ProductDetailModal
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onInquiry={() => {
+          setSelectedProduct(null);
+          window.setTimeout(() => navigate("#/contact", "contact-form"), 40);
+        }}
+      />
     </>
   );
 }
@@ -1009,6 +1016,7 @@ function AnimatedCards({
   cards,
   className = "",
   onCardClick,
+  onProductInquiry,
   carouselCta,
   startVisible = false,
   initialIndex = 0,
@@ -1017,6 +1025,7 @@ function AnimatedCards({
   cards: AnimatedCardData[];
   className?: string;
   onCardClick?: (card: AnimatedCardData, index: number) => void;
+  onProductInquiry?: (product: Product) => void;
   carouselCta?: ReactNode;
   startVisible?: boolean;
   initialIndex?: number;
@@ -1044,6 +1053,9 @@ function AnimatedCards({
           <div className="product-preview-media">
             <img src={productCard.product.images[0].src} alt={productCard.product.images[0].alt} loading="lazy" />
           </div>
+          {onProductInquiry && (
+            <ProductInquiryButton productName={productCard.product.name} onClick={() => onProductInquiry(productCard.product)} />
+          )}
         </div>
       );
     }
@@ -1116,6 +1128,26 @@ function AnimatedCards({
   );
 }
 
+function ProductInquiryButton({ productName, onClick }: { productName?: string; onClick: () => void }) {
+  return (
+    <button
+      className="product-card-inquiry-button"
+      type="button"
+      aria-label={productName ? `Start an inquiry for ${productName}` : "Start an inquiry"}
+      onPointerDown={(event) => event.stopPropagation()}
+      onPointerUp={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+    >
+      <span>Start an Inquiry</span>
+      <ArrowRight size={16} weight="bold" />
+    </button>
+  );
+}
+
 function AnimatedCard({
   index,
   children,
@@ -1159,7 +1191,7 @@ function AnimatedCard({
   );
 }
 
-function ProductDetailModal({ product, onClose }: { product: Product | null; onClose: () => void }) {
+function ProductDetailModal({ product, onClose, onInquiry }: { product: Product | null; onClose: () => void; onInquiry: () => void }) {
   useEffect(() => {
     if (!product) return undefined;
 
@@ -1287,6 +1319,10 @@ function ProductDetailModal({ product, onClose }: { product: Product | null; onC
               {product.tags.map((tag) => (
                 <span key={tag}>{tag}</span>
               ))}
+            </div>
+
+            <div className="product-detail-actions">
+              <ProductInquiryButton productName={product.name} onClick={onInquiry} />
             </div>
           </motion.article>
         </motion.div>
@@ -1471,6 +1507,7 @@ function HeroProductsScene({
       <div className="concept-formula-box product-preview-media">
         <img src={product.images[0].src} alt={product.images[0].alt} loading={isCenter ? "eager" : "lazy"} />
       </div>
+      <ProductInquiryButton productName={product.name} onClick={() => navigate("#/contact", "contact-form")} />
     </>
   );
 
@@ -1965,6 +2002,7 @@ function ProductsCatalogScene({
               onProductSelect((card as ProductCardData).product);
             }
           }}
+          onProductInquiry={() => navigate("#/contact", "contact-form")}
           startVisible
           carouselCta={
             <>
@@ -2429,6 +2467,7 @@ function ProductInterestDropdown({
         {isOpen && (
           <motion.div
             className="product-dropdown-menu"
+            data-lenis-prevent=""
             id={menuId}
             role="listbox"
             aria-labelledby={`${id}-label`}
@@ -2436,6 +2475,8 @@ function ProductInterestDropdown({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            onWheel={(event) => event.stopPropagation()}
+            onTouchMove={(event) => event.stopPropagation()}
           >
             {options.map((option, index) => {
               const isSelected = option === value;
@@ -2449,9 +2490,11 @@ function ProductInterestDropdown({
                   key={option}
                   onClick={() => selectOption(option)}
                   onPointerDown={(event) => {
-                    event.preventDefault();
                     event.stopPropagation();
-                    selectOption(option);
+                    if (event.pointerType === "mouse") {
+                      event.preventDefault();
+                      selectOption(option);
+                    }
                   }}
                   onMouseEnter={() => setHighlightedIndex(index)}
                 >
