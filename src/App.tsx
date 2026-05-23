@@ -2226,15 +2226,20 @@ function ContactIntroScene({ progress, onRequestQuote }: { progress: MotionValue
 }
 
 function ContactDetailsScene({ progress }: { progress: MotionValue<number> }) {
-  const labelOpacity = useTransform(progress, [0.24, 0.34], [0, 1]);
-  const labelY = useTransform(progress, [0.24, 0.34], [24, 0]);
-  const headingOpacity = useTransform(progress, [0.28, 0.42], [0, 1]);
-  const headingY = useTransform(progress, [0.28, 0.42], [72, 0]);
-  const helperOpacity = useTransform(progress, [0.32, 0.46], [0, 1]);
-  const helperY = useTransform(progress, [0.32, 0.46], [48, 0]);
-  const cardsOpacity = useTransform(progress, [0.36, 0.52], [0, 1]);
-  const cardsY = useTransform(progress, [0.36, 0.52], [82, 0]);
-  const cardsScale = useTransform(progress, [0.36, 0.52], [0.98, 1]);
+  const isMobile = useIsMobileViewport();
+  const labelRange = isMobile ? [0.02, 0.18] : [0.24, 0.34];
+  const headingRange = isMobile ? [0.04, 0.22] : [0.28, 0.42];
+  const helperRange = isMobile ? [0.08, 0.26] : [0.32, 0.46];
+  const cardsRange = isMobile ? [0.12, 0.32] : [0.36, 0.52];
+  const labelOpacity = useTransform(progress, labelRange, [0, 1]);
+  const labelY = useTransform(progress, labelRange, [isMobile ? 16 : 24, 0]);
+  const headingOpacity = useTransform(progress, headingRange, [0, 1]);
+  const headingY = useTransform(progress, headingRange, [isMobile ? 40 : 72, 0]);
+  const helperOpacity = useTransform(progress, helperRange, [0, 1]);
+  const helperY = useTransform(progress, helperRange, [isMobile ? 32 : 48, 0]);
+  const cardsOpacity = useTransform(progress, cardsRange, [0, 1]);
+  const cardsY = useTransform(progress, cardsRange, [isMobile ? 56 : 82, 0]);
+  const cardsScale = useTransform(progress, cardsRange, [0.98, 1]);
 
   const listVariants: Variants = {
     hidden: {},
